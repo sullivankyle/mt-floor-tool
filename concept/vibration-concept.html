@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mass timber floor system study - concept demo</title>
+<style>
+  :root {
+    --bg: #f7f6f3; --card: #ffffff; --ink: #1f2328; --mute: #6b7078; --line: #e3e1db;
+    --accent: #2f6fb5; --good: #2e7d4f; --good-bg: #e4f3ea; --warn: #b26a00; --warn-bg: #fbf0dc;
+    --bad: #b3372f; --bad-bg: #fbe6e4; --t1: #c77d2a; --t2: #2f6fb5; --t3: #7a52a8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { padding: 20px 24px 8px; max-width: 1320px; margin: 0 auto; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .banner { display: inline-block; background: var(--warn-bg); color: var(--warn); border-radius: 6px;
+            padding: 4px 10px; font-size: 13px; font-weight: 600; }
+  main { max-width: 1320px; margin: 0 auto; padding: 8px 24px 40px;
+         display: grid; grid-template-columns: 320px 1fr; gap: 20px; align-items: start; }
+  main > section, main > aside { min-width: 0; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; }
+  .card h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--mute); margin: 0 0 12px; }
+  .card + .card { margin-top: 16px; }
+  label { display: block; font-size: 13px; margin: 12px 0 2px; }
+  label:first-of-type { margin-top: 0; }
+  label.inline { display: flex; gap: 8px; align-items: center; margin-top: 12px; }
+  .row { display: flex; align-items: center; gap: 10px; }
+  .row output { min-width: 64px; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  input[type=range] { flex: 1; accent-color: var(--accent); }
+  select, input[type=text], input[type=number] { width: 100%; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: #fff; font: inherit; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .four { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  @media (max-width: 700px) { .four { grid-template-columns: 1fr 1fr; } }
+  .hint { color: var(--mute); font-size: 12px; margin-top: 4px; }
+  .big { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .big .num { font-size: 40px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .big .unit { color: var(--mute); font-size: 16px; margin-left: -4px; margin-right: 4px; }
+  .chip { border-radius: 999px; padding: 3px 12px; font-size: 13px; font-weight: 600; display: inline-block; }
+  .chip.good { background: var(--good-bg); color: var(--good); }
+  .chip.warn { background: var(--warn-bg); color: var(--warn); }
+  .chip.bad  { background: var(--bad-bg);  color: var(--bad); }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 10px; margin-top: 14px; }
+  .kpi { background: #f4f3ef; border-radius: 8px; padding: 8px 10px; }
+  .kpi b { display: block; font-size: 19px; font-variant-numeric: tabular-nums; }
+  .kpi span { font-size: 12px; color: var(--mute); }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  td, th { padding: 5px 8px; text-align: right; border-bottom: 1px solid var(--line); font-size: 14px; }
+  th { font-size: 12px; color: var(--mute); font-weight: 600; }
+  th:first-child, td:first-child { text-align: left; }
+  td.l, th.l { text-align: left; }
+  td.name { color: var(--mute); }
+  td.u-bad { color: var(--bad); font-weight: 700; }
+  td.u-gov { font-weight: 700; }
+  tr.sel td { background: #eef4fb; }
+  tr.off td { color: #9aa0a8; }
+  table.t td { white-space: nowrap; }
+  .calc h3 { font-size: 14px; margin: 16px 0 4px; }
+  .calc h3:first-of-type { margin-top: 0; }
+  .ref { color: var(--mute); font-weight: 400; font-size: 12px; }
+  .check { font-size: 13px; }
+  .check .ok { color: var(--good); font-weight: 600; }
+  .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); margin-bottom: 16px; flex-wrap: wrap; }
+  .tab { padding: 8px 12px; border: 0; background: none; font: inherit; color: var(--mute); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tab.on { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
+  .panel { display: none; } .panel.on { display: block; }
+  .btn { padding: 6px 12px; border: 1px solid var(--line); background: #fff; border-radius: 6px; font: inherit; font-size: 13px; cursor: pointer; }
+  .btn:hover { border-color: var(--accent); }
+  .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn.small { padding: 2px 8px; font-size: 12px; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 12px; align-items: center; }
+  .heat td { text-align: center; padding: 6px 4px; font-size: 12px; cursor: pointer; border: 1px solid #fff; line-height: 1.25; }
+  .heat td small { color: #4b5058; font-size: 10.5px; }
+  .heat td.none { background: #f0efeb; color: #9aa0a8; cursor: default; }
+  .heat td.best { outline: 2px solid var(--good); outline-offset: -2px; font-weight: 700; }
+  .heat td.cur  { box-shadow: inset 0 0 0 2px var(--accent); }
+  .heat th { text-align: center; padding: 4px; }
+  .heat th:first-child { text-align: left; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--mute); margin-top: 8px; }
+  .legend i { display: inline-block; width: 14px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+  ul.notes { margin: 0; padding: 0; list-style: none; }
+  ul.notes li { padding: 7px 0 7px 26px; border-bottom: 1px solid var(--line); font-size: 13.5px; position: relative; }
+  ul.notes li:before { position: absolute; left: 4px; top: 7px; font-weight: 700; }
+  ul.notes li.ok:before { content: "\2713"; color: var(--good); }
+  ul.notes li.warn:before { content: "!"; color: var(--warn); left: 8px; }
+  ul.notes li.bad:before { content: "\2715"; color: var(--bad); }
+  ul.notes li.info:before { content: "i"; color: var(--accent); left: 8px; font-style: italic; }
+  .cat input[type=number], .cat input[type=text] { padding: 3px 5px; font-size: 13px; min-width: 64px; }
+  .cat td { padding: 3px 4px; }
+  .tag { font-size: 11px; border-radius: 4px; padding: 1px 6px; font-weight: 600; white-space: nowrap; }
+  .tag.real { background: var(--good-bg); color: var(--good); }
+  .tag.ph { background: var(--warn-bg); color: var(--warn); }
+  .report { background: #fff; padding: 28px 32px; border: 1px solid var(--line); border-radius: 10px; }
+  .report h1 { font-size: 22px; }
+  .report h2 { font-size: 15px; text-transform: none; letter-spacing: 0; color: var(--ink); border-bottom: 1px solid var(--line); padding-bottom: 4px; margin: 24px 0 8px; }
+  .report ul { margin: 6px 0; padding-left: 20px; font-size: 13px; }
+  .report table.t td, .report table.t th { font-size: 12.5px; }
+  textarea.copybox { width: 100%; height: 160px; font: 12px ui-monospace, Menlo, monospace; margin-top: 8px; }
+  #tip { position: fixed; z-index: 50; max-width: 340px; background: #1f2328; color: #fff; font-size: 12.5px; line-height: 1.45;
+         padding: 8px 10px; border-radius: 6px; pointer-events: none; display: none; box-shadow: 0 4px 14px rgba(0,0,0,.2); }
+  .info { display: inline-block; margin-left: 4px; color: #9aa0a8; font-size: 12px; font-weight: 400; cursor: help; line-height: 1; padding: 1px 2px; }
+  .info:hover { color: var(--accent); }
+  #calcstat { color: var(--mute); font-size: 12px; margin-left: 10px; transition: color .3s; }
+  #calcstat.flash { color: var(--good); }
+  footer { max-width: 1320px; margin: 0 auto; padding: 0 24px 40px; color: var(--mute); font-size: 12px; }
+  @media print {
+    body { background: #fff; }
+    header, aside, .tabs, .no-print, footer { display: none !important; }
+    main { display: block; padding: 0; max-width: none; }
+    .panel { display: none !important; }
+    #tab-report { display: block !important; }
+    .report { border: 0; padding: 0; }
+    h2, svg, table { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Mass timber floor system study <span class="ref">concept demo</span></h1>
+  <span class="banner">Concept tool. Every change re-runs the full study; values tagged as placeholders on the Catalog tab are estimates. Not for design or pricing.</span><span id="calcstat"></span>
+</header>
+
+<main>
+  <aside>
+    <div class="card">
+      <h2>Grid and layout</h2>
+      <label for="layout">Building layout</label>
+      <select id="layout">
+        <option value="corr" selected>Double-loaded corridor</option>
+        <option value="bay">One typical bay</option>
+      </select>
+      <div id="corrbox">
+        <div class="two">
+          <div><label for="nb">Bays each side</label><select id="nb"><option value="1" selected>1</option><option value="2">2</option></select></div>
+          <div><label for="Wc">Corridor width, ft</label><select id="Wc"><option>6</option><option selected>8</option><option>10</option><option>12</option></select></div>
+        </div>
+      </div>
+      <label for="gA">A: column spacing along the corridor (girder span)</label>
+      <div class="row"><input id="gA" type="range" min="12" max="40" step="1" value="30"><output id="gA_o"></output></div>
+      <label for="gB">B: bay depth, corridor to exterior (purlin span, or CLT span with no purlins)</label>
+      <div class="row"><input id="gB" type="range" min="10" max="40" step="1" value="25"><output id="gB_o"></output></div>
+      <label for="sysF">Framing system</label>
+      <select id="sysF">
+        <option value="all">Optimize</option>
+        <option value="T1">CLT on girders (no purlins)</option>
+        <option value="T2">CLT on flush purlins</option>
+        <option value="T3">CLT on purlins over dropped girders</option>
+        <option value="T23">Purlins, flush or dropped</option>
+      </select>
+      <div class="hint">Girders run along the corridor. Purlins run perpendicular to it, parallel to MEP branch ducts.</div>
+    </div>
+
+    <div class="card">
+      <h2>Loads</h2>
+      <label for="occ">Occupancy (design live / live counted for vibration)</label>
+      <select id="occ">
+        <option value="40|6">Residential (40 / 6 psf)</option>
+        <option value="50|7" selected>Office, electronic (50 / 7 psf)</option>
+        <option value="50|11">Office, paper (50 / 11 psf)</option>
+        <option value="100|0">Assembly (100 / 0 psf)</option>
+      </select>
+      <label for="sdl">Superimposed dead load</label>
+      <div class="row"><input id="sdl" type="range" min="0" max="50" step="1" value="25"><output id="sdl_o"></output></div>
+      <div class="hint">Finishes, partitions, topping, MEP.</div>
+    </div>
+
+    <div class="card">
+      <h2>Building</h2>
+      <label for="stories">Floors carried by each column</label>
+      <div class="row"><input id="stories" type="range" min="1" max="8" step="1" value="3"><output id="stories_o"></output></div>
+      <label for="H">Story height</label>
+      <div class="row"><input id="H" type="range" min="10" max="18" step="0.5" value="13"><output id="H_o"></output></div>
+      <label for="fire">Fire resistance (exposed timber)</label>
+      <select id="fire"><option value="0">None</option><option value="1" selected>1 hour</option><option value="2">2 hour</option></select>
+    </div>
+
+    <div class="card">
+      <h2>Design constraints</h2>
+      <label for="maxD">Maximum structural depth (CLT + girder)</label>
+      <select id="maxD"><option value="0">No limit</option><option>18</option><option>24</option><option>30</option><option>36</option><option>42</option><option selected>48</option><option>60</option><option>72</option></select>
+      <label for="maxPick">Crane: heaviest allowed pick</label>
+      <select id="maxPick"><option value="0" selected>No limit</option><option value="5">5 kip</option><option value="8">8 kip</option><option value="10">10 kip</option><option value="15">15 kip</option></select>
+      <label for="appear">CLT appearance</label>
+      <select id="appear"><option value="1">Industrial</option><option value="1.08" selected>Architectural (+8%)</option></select>
+    </div>
+
+    <div class="card">
+      <h2>Site and supply</h2>
+      <label for="site">Project site</label>
+      <select id="site"></select>
+      <label for="sup">Supplier</label>
+      <select id="sup"></select>
+      <label class="inline" for="split"><input type="checkbox" id="split"> Allow a separate glulam supplier</label>
+    </div>
+
+    <div class="card">
+      <h2>Vibration targets</h2>
+      <label for="target">Minimum floor frequency</label>
+      <div class="row"><input id="target" type="range" min="3" max="15" step="0.5" value="5"><output id="target_o"></output></div>
+      <label for="alim">Peak walking acceleration limit</label>
+      <select id="alim">
+        <option value="0.3">0.3% g (premium office, residence)</option>
+        <option value="0.5" selected>0.5% g (office, quiet areas)</option>
+        <option value="1.5">1.5% g (residence, daytime)</option>
+      </select>
+      <label for="damp">Damping ratio</label>
+      <div class="row"><input id="damp" type="range" min="1" max="5" step="0.5" value="3"><output id="damp_o"></output></div>
+    </div>
+
+    <div class="card">
+      <h2>Optimize for</h2>
+      <select id="obj">
+        <option value="cost">Lowest cost per sq ft</option>
+        <option value="depth">Shallowest structure</option>
+        <option value="vol">Least timber</option>
+        <option value="picks">Fewest crane picks</option>
+        <option value="freq">Highest floor frequency</option>
+      </select>
+      <div class="hint">Among designs that pass every check and constraint.</div>
+    </div>
+  </aside>
+
+  <section>
+    <div class="tabs" role="tablist">
+      <button class="tab on" data-tab="study">Study</button>
+      <button class="tab" data-tab="design">Design</button>
+      <button class="tab" data-tab="grid">Grid comparison</button>
+      <button class="tab" data-tab="runs">Runs</button>
+      <button class="tab" data-tab="catalog">Catalog and costs</button>
+      <button class="tab" data-tab="report">Report</button>
+    </div>
+
+    <!-- STUDY -->
+    <div class="panel on" id="tab-study">
+      <div class="card">
+        <h2>Best option</h2>
+        <div id="bestbox"></div>
+        <div class="hint" id="studyinfo"></div>
+      </div>
+      <div class="card">
+        <h2>Where the cost goes <span class="ref" id="cb_for"></span></h2>
+        <div id="costchart"></div>
+        <div class="hint">Bar height is $ per sq ft of floor; the label above each bar gives its share of the total. Unit costs and rates are on the Catalog tab.</div>
+      </div>
+      <div class="card">
+        <h2>Design considerations <span class="ref">for the best option</span></h2>
+        <ul class="notes" id="notes"></ul>
+      </div>
+      <div class="card">
+        <h2>Suppliers for the best option</h2>
+        <div style="overflow-x:auto"><div id="suppliers"></div></div>
+        <div class="hint">Each row prices the same design from one plant as a single package. Distance is straight-line x 1.25. Panel sizes marked "assumed" are not confirmed; check with the manufacturer.</div>
+      </div>
+      <div class="card">
+        <h2>Map: best design for each panel and layout</h2>
+        <div style="overflow-x:auto"><div id="heat"></div></div>
+        <div class="legend">
+          <span><i style="background:hsl(125 55% 85%)"></i>better</span>
+          <span><i style="background:hsl(0 55% 85%)"></i>worse</span>
+          <span><i style="background:#f0efeb"></i>no passing design</span>
+          <span><i style="outline:2px solid var(--good);outline-offset:-2px"></i>best overall</span>
+          <span><i style="box-shadow:inset 0 0 0 2px var(--accent)"></i>shown on Design tab</span>
+        </div>
+        <div class="hint">Each cell is the best member sizing found for that panel and layout. Click a cell to open it.</div>
+      </div>
+      <div class="card">
+        <h2>Trade-off: cost against <select id="sc_y" style="width:auto;display:inline-block;padding:2px 6px;font-size:12px"><option value="depth">structural depth</option><option value="fn">floor frequency</option></select></h2>
+        <div id="scatter"></div>
+        <div class="legend">
+          <span><i style="background:var(--t1)"></i>CLT on girders</span>
+          <span><i style="background:var(--t2)"></i>Flush purlins</span>
+          <span><i style="background:var(--t3)"></i>Purlins over dropped girders</span>
+          <span><i style="background:#c3c6cb"></i>strength ok, misses a target or constraint</span>
+        </div>
+        <div class="hint">Every design that passes strength. Click a dot to open it.</div>
+      </div>
+      <div class="card">
+        <h2>Shortlist</h2>
+        <div class="actions"><button class="btn primary" data-act="run-short">Add top 5 as runs</button></div>
+        <div style="overflow-x:auto"><div id="short"></div></div>
+      </div>
+    </div>
+
+    <!-- DESIGN -->
+    <div class="panel" id="tab-design">
+      <div class="card">
+        <h2>Design <span class="ref" id="d_mode"></span></h2>
+        <div class="four">
+          <div><label for="d_sys">System</label><select id="d_sys"><option value="T1">CLT on girders</option><option value="T2">CLT on flush purlins</option><option value="T3">Purlins over dropped girders</option></select></div>
+          <div><label for="d_n">Purlins per bay</label><select id="d_n"></select></div>
+          <div><label for="d_pi">CLT panel</label><select id="d_pi"></select></div>
+          <div><label for="d_ci">Column</label><select id="d_ci"></select></div>
+          <div><label for="d_pw">Purlin width</label><select id="d_pw"></select></div>
+          <div><label for="d_pd">Purlin depth</label><select id="d_pd"></select></div>
+          <div><label for="d_gw">Girder width</label><select id="d_gw"></select></div>
+          <div><label for="d_gd">Girder depth</label><select id="d_gd"></select></div>
+        </div>
+        <div class="actions" style="margin-top:12px">
+          <button class="btn" data-act="use-best">Use the optimizer's best</button>
+          <button class="btn primary" data-act="add-run">Add as a run</button>
+        </div>
+      </div>
+      <div class="card"><h2>Result</h2><div id="d_result"></div></div>
+      <div class="card"><h2>Where the cost goes</h2><div id="d_costchart"></div></div>
+      <div class="card"><h2>Plan</h2><div id="plan"></div></div>
+      <div class="card calc">
+        <h2>Calculations</h2>
+        <h3>1. Strength, deflection and fire <span class="ref">utilization = demand / capacity; ASD, D + L</span></h3>
+        <div style="overflow-x:auto"><table class="t" id="t_str"></table></div>
+        <h3>2. Vibration <span class="ref">guide frequency method, Dunkerley; acceleration is a DG 11 style placeholder</span></h3>
+        <table id="t_vib"></table>
+        <h3>3. Quantities <span class="ref" id="q_unit"></span></h3>
+        <table id="t_qty"></table>
+        <h3>4. Cost <span class="ref">unit costs and rates from the Catalog tab</span></h3>
+        <table id="t_cost"></table>
+      </div>
+      <div class="card"><h2>Design considerations</h2><ul class="notes" id="d_notes"></ul></div>
+      <div class="card check">
+        <h2>Method checks against the guide's worked examples</h2>
+        <div id="checks"></div>
+      </div>
+    </div>
+
+    <!-- GRID -->
+    <div class="panel" id="tab-grid">
+      <div class="card">
+        <h2>Compare grids</h2>
+        <div class="hint" style="margin:0 0 8px">Runs the full study for every A and B combination and keeps the best design for each. Enter a single B to hold a fixed bay depth while varying the column spacing.</div>
+        <div class="two">
+          <div><label for="lA">A values (column spacing along corridor), ft</label><input id="lA" type="text" value="20, 25, 30, 35"></div>
+          <div><label for="lB">B values (bay depth), ft</label><input id="lB" type="text" value="20, 25, 30"></div>
+        </div>
+        <div class="actions" style="margin-top:12px">
+          <button class="btn primary" data-act="grid">Run comparison</button>
+          <span class="hint" id="g_msg" style="margin:0"></span>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Best design per grid</h2>
+        <div style="overflow-x:auto"><div id="g_heat"></div></div>
+        <div class="hint">Click a cell to load that grid into the study.</div>
+      </div>
+      <div class="card"><h2>Ranked</h2><div id="g_bars"></div></div>
+    </div>
+
+    <!-- RUNS -->
+    <div class="panel" id="tab-runs">
+      <div class="card">
+        <h2>Runs</h2>
+        <div class="hint" style="margin:0 0 8px">A run freezes a design and its inputs so options can be compared side by side.</div>
+        <div class="actions">
+          <button class="btn primary" data-act="add-run">Add current design</button>
+          <button class="btn" data-act="run-short">Add top 5 from the study</button>
+          <button class="btn" data-act="clear-runs">Clear</button>
+        </div>
+        <div style="overflow-x:auto"><div id="runs"></div></div>
+      </div>
+    </div>
+
+    <!-- CATALOG -->
+    <div class="panel" id="tab-catalog">
+      <div class="card cat" id="catalog"></div>
+      <div class="card cat" id="mfrcat"></div>
+    </div>
+
+    <!-- REPORT -->
+    <div class="panel" id="tab-report">
+      <div class="card no-print">
+        <div class="two">
+          <div><label for="rp_name">Project name</label><input id="rp_name" type="text" placeholder="Untitled project"></div>
+          <div><label for="rp_by">Prepared by</label><input id="rp_by" type="text" placeholder="Name"></div>
+        </div>
+        <div class="actions" style="margin-top:12px">
+          <button class="btn primary" data-act="print">Print or save as PDF</button>
+          <button class="btn" data-act="copy">Copy as text</button>
+          <span class="hint" id="rp_msg" style="margin:0"></span>
+        </div>
+        <textarea id="rp_box" class="copybox" style="display:none" readonly></textarea>
+      </div>
+      <div id="report"></div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  Vibration equations re-implemented from the U.S. Mass Timber Floor Vibration Design Guide (WoodWorks, 2023) and checked against its worked examples. E1 panel values: APA PR-L332 (Kalesnikoff). CLT price basis: Beck Group Mass Timber Performance Index 2025 ($42 to $44 per cu ft, excluding freight). Erection rate basis: $3,000 per hour cited in a WoodWorks contractor presentation. Freight basis: DAT flatbed spot rates, fall 2026. Manufacturer data from published product pages where noted; everything else is a placeholder.
+</footer>
+
+<script>
+/* ================= constants ================= */
+const G = 386.1;
+const PWS = [5.125, 6.75, 8.75], GWS = [6.75, 8.75, 10.75, 12.25];
+const DEP = []; for (let d = 9; d <= 63; d += 1.5) DEP.push(d);
+const COLS = [[6.75, 7.5], [8.75, 9], [8.75, 10.5], [10.75, 10.5], [10.75, 12], [12.25, 12], [12.25, 13.5], [12.25, 15], [12.25, 16.5], [14.25, 15], [14.25, 18], [16.25, 16.5], [16.25, 19.5], [18.25, 19.5], [18.25, 22.5]];
+const MAXDB = 6;
+const WL = { 5.125: '5 1/8', 6.75: '6 3/4', 8.75: '8 3/4', 10.75: '10 3/4', 12.25: '12 1/4', 14.25: '14 1/4', 16.25: '16 1/4', 18.25: '18 1/4' };
+const wl = w => WL[w] || String(w);
+const dl = d => Number.isInteger(d) ? String(d) : Math.floor(d) + ' 1/2';
+const sz = (b, d) => wl(b) + ' x ' + dl(d);
+
+const SITES = {
+  'Bellingham, WA': [48.75, -122.48, 'US'], 'Seattle, WA': [47.61, -122.33, 'US'], 'Portland, OR': [45.52, -122.68, 'US'],
+  'San Francisco, CA': [37.77, -122.42, 'US'], 'Los Angeles, CA': [34.05, -118.24, 'US'], 'Boise, ID': [43.62, -116.2, 'US'],
+  'Denver, CO': [39.74, -104.99, 'US'], 'Minneapolis, MN': [44.98, -93.27, 'US'], 'Chicago, IL': [41.88, -87.63, 'US'],
+  'Dallas, TX': [32.78, -96.8, 'US'], 'Atlanta, GA': [33.75, -84.39, 'US'], 'Washington, DC': [38.9, -77.04, 'US'],
+  'New York, NY': [40.71, -74.0, 'US'], 'Boston, MA': [42.36, -71.06, 'US'], 'Vancouver, BC': [49.28, -123.12, 'CA'], 'Toronto, ON': [43.65, -79.38, 'CA']
+};
+
+function defaultCatalog() {
+  const real = 'APA PR-L332 (Kalesnikoff), E1 table', der = 'Derived from E1: EI x 1.4/1.7, strength x 875/1950 lam Fb';
+  return {
+    panels: [
+      { on: true, grade: 'V2', name: 'V2 3-ply 4 1/8', t: 4.125, pl: 3, EI: 95,   FbS: 2030,  GA: 0.46, Vs: 1490, pcf: 28.1, cost: 43, real: false, src: 'EI from the guide example; strength ' + der },
+      { on: true, grade: 'V2', name: 'V2 5-ply 6 7/8', t: 6.875, pl: 5, EI: 362,  FbS: 4670,  GA: 0.92, Vs: 2480, pcf: 28.1, cost: 43, real: false, src: der },
+      { on: true, grade: 'V2', name: 'V2 7-ply 9 5/8', t: 9.625, pl: 7, EI: 897,  FbS: 8250,  GA: 1.4,  Vs: 3475, pcf: 28.1, cost: 43, real: false, src: der },
+      { on: true, grade: 'E1', name: 'E1 3-ply 4 1/8', t: 4.125, pl: 3, EI: 115,  FbS: 4525,  GA: 0.46, Vs: 1490, pcf: 28.1, cost: 47, real: true, src: real },
+      { on: true, grade: 'E1', name: 'E1 5-ply 6 7/8', t: 6.875, pl: 5, EI: 440,  FbS: 10400, GA: 0.92, Vs: 2480, pcf: 28.1, cost: 47, real: true, src: real },
+      { on: true, grade: 'E1', name: 'E1 7-ply 9 5/8', t: 9.625, pl: 7, EI: 1089, FbS: 18375, GA: 1.4,  Vs: 3475, pcf: 28.1, cost: 47, real: true, src: real },
+      { on: true, grade: 'E1', name: 'E1 9-ply 12 3/8', t: 12.375, pl: 9, EI: 2169, FbS: 28475, GA: 1.8, Vs: 4450, pcf: 28.1, cost: 47, real: true, src: real }
+    ],
+    gl: { E: 1.8, Fb: 2400, Fv: 265, Fc: 1650, Emin: 0.95, pcf: 35, cost: 55 },
+    glW: { 5.125: 0.95, 6.75: 1.0, 8.75: 1.08, 10.75: 1.2, 12.25: 1.3, 14.25: 1.45, 16.25: 1.6, 18.25: 1.75 },
+    inst: { crew: 3000, pPanel: 2.5, pBeam: 4, pCol: 3 },
+    conn: { pur: 250, bear: 90, gir: 700, col: 900 },
+    frt: { rate: 3.25, payload: 44000, osPct: 35, fixed: 250, broker: 300, tarCAUS: 0, tarUSCA: 25 },
+    logi: { panW: 10, panMax: 40 },
+    mfrs: [
+      { on: true, name: 'Mercer Mass Timber', plant: 'Spokane Valley, WA', ll: [47.67, -117.24], c: 'US', clt: { w: 12, L: 60, t: 16, known: true }, gl: true, grades: null, pf: 1, src: '12 x 60 ft CLT press (Mercer)' },
+      { on: true, name: 'Mercer Mass Timber', plant: 'Conway, AR', ll: [35.09, -92.44], c: 'US', clt: { w: 10, L: 40, t: 12.5, known: false }, gl: true, grades: null, pf: 1, src: 'CLT and glulam on one line (Mercer EPD); panel size assumed' },
+      { on: true, name: 'Mercer Mass Timber', plant: 'Okanagan Falls, BC', ll: [49.34, -119.57], c: 'CA', clt: { w: 10, L: 40, t: 12.5, known: false }, gl: true, grades: null, pf: 1, src: 'Former Structurlam; older CrossLam literature limits length to 40 ft' },
+      { on: true, name: 'Kalesnikoff', plant: 'Castlegar area, BC', ll: [49.43, -117.53], c: 'CA', clt: { w: 11.5, L: 60, t: 15, known: true }, gl: true, grades: ['E1', 'V2'], pf: 1, src: 'Widths to 3.5 m, lengths to 60 ft (Kalesnikoff); E1 per APA PR-L332' },
+      { on: true, name: 'Element5', plant: 'St. Thomas, ON', ll: [42.78, -81.19], c: 'CA', clt: { w: 11.1, L: 51.8, t: 15, known: true }, gl: true, grades: ['V2', 'E1'], pf: 1, src: 'Up to 11.1 x 51.8 ft, 15 in.; V2 and E1 (Element5)' },
+      { on: true, name: 'SmartLam', plant: 'Columbia Falls, MT', ll: [48.37, -114.18], c: 'US', clt: { w: 10, L: 40, t: 12.5, known: false }, gl: true, grades: null, pf: 1, src: 'CLT and glulam; panel size assumed' },
+      { on: true, name: 'SmartLam', plant: 'Dothan, AL', ll: [31.22, -85.39], c: 'US', clt: { w: 10, L: 40, t: 12.5, known: false }, gl: true, grades: null, pf: 1, src: 'CLT and glulam; panel size assumed' },
+      { on: true, name: 'Vaagen Timbers', plant: 'Colville, WA', ll: [48.55, -117.91], c: 'US', clt: { w: 10, L: 40, t: 12.5, known: false }, gl: true, grades: null, pf: 1, src: 'CLT, glulam and GLT; panel size assumed' },
+      { on: true, name: 'DR Johnson', plant: 'Riddle, OR', ll: [42.95, -123.36], c: 'US', clt: { w: 10, L: 40, t: 12.5, known: false }, gl: true, grades: null, pf: 1, src: 'CLT; panel size assumed' },
+      { on: true, name: 'Nordic Structures', plant: 'Chibougamau, QC', ll: [49.91, -74.37], c: 'CA', clt: { w: 10, L: 40, t: 12.5, known: false }, gl: true, grades: null, pf: 1, src: 'CLT and glulam; panel size assumed' },
+      { on: true, name: 'Freres Engineered Wood', plant: 'Lyons, OR', ll: [44.78, -122.61], c: 'US', clt: null, gl: false, grades: null, pf: 1, other: 'MPP panels to 12 x 48 ft; LVL beams and columns', src: 'Makes MPP, not CLT; add MPP properties to the panel catalog to include it' },
+      { on: true, name: 'Timberlab', plant: 'Portland, OR', ll: [45.52, -122.68], c: 'US', clt: null, gl: true, grades: null, pf: 1, src: 'Glulam and GLT, fabricator' },
+      { on: true, name: 'Western Archrib', plant: 'Boissevain, MB', ll: [49.23, -100.06], c: 'CA', clt: null, gl: true, grades: null, pf: 1, src: 'Glulam, GLT and NLT' }
+    ]
+  };
+}
+let CAT = defaultCatalog();
+const psfOf = P => P.pcf * P.t / 12;
+const glFactor = b => { const k = Object.keys(CAT.glW).map(Number).sort((a, c) => a - c); let f = CAT.glW[k[0]]; k.forEach(x => { if (b >= x) f = CAT.glW[x]; }); return f; };
+
+/* ================= structural calcs (pure) ================= */
+function stripDeflection(wPsf, Lft, EI) { return 5 * (wPsf / 12) * Math.pow(Lft * 12, 4) / (384 * EI); }
+const freqFromDefl = d => 0.18 * Math.sqrt(G / d);
+const cltSpanLimit = (EI, wPsf) => Math.pow(EI, 0.293) / Math.pow(wPsf, 0.122) / 13.34;
+const dunkerley = fs => 1 / Math.sqrt(fs.reduce((s, f) => s + 1 / (f * f), 0));
+const volFactor = (L, d, b) => Math.min(1, Math.pow(21 / L, 0.1) * Math.pow(12 / d, 0.1) * Math.pow(5.125 / b, 0.1));
+const charDepth = hr => hr > 0 ? 1.2 * 1.5 * Math.pow(hr, 0.813) : 0;
+
+function cltFireRatio(P, a) {
+  const lt = P.t / P.pl;
+  const S = a0 => {
+    const L = [];
+    for (let i = 0; i < P.pl; i += 2) { const bot = Math.max(i * lt, a0), top = (i + 1) * lt; if (top - bot > 1e-6) L.push([bot, top]); }
+    if (!L.length) return 0;
+    let A = 0, M = 0; L.forEach(([b, t]) => { A += t - b; M += (t - b) * (b + t) / 2; });
+    const yb = M / A; let I = 0;
+    L.forEach(([b, t]) => { const h = t - b, y = (b + t) / 2; I += h * h * h / 12 + h * (y - yb) * (y - yb); });
+    return I / Math.max(yb - L[0][0], L[L.length - 1][1] - yb);
+  };
+  return S(a) / S(0);
+}
+function panelCheck(o, P, L) {
+  const D = psfOf(P) + o.sdl, w = D + o.LLd, Lin = L * 12;
+  const M = w * L * L / 8, V = w * L / 2;
+  const EIe = P.EI * 1e6, GA = P.GA * 1e6, EIapp = EIe / (1 + 11.5 * EIe / (GA * Lin * Lin));
+  const dL = stripDeflection(o.LLd, L, EIapp), dT = stripDeflection(w, L, EIapp);
+  const u = { b: M / P.FbS, v: V / P.Vs, dl: dL / (Lin / 360), dt: dT / (Lin / 240), f: 0 };
+  let fr = 1; const a = charDepth(o.fire);
+  if (a) { fr = cltFireRatio(P, a); u.f = fr > 0 ? M / (2.85 * P.FbS * fr) : 9.99; }
+  const umax = Math.max(u.b, u.v, u.dl, u.dt, u.f);
+  return { L, w, M, V, EIapp, dL, dT, u, fr, umax, ok: umax <= 1 };
+}
+function memberCheck(o, b, d, L, wD, wL) {
+  const gl = CAT.gl, E = gl.E * 1e6;
+  const sw = b * d / 144 * gl.pcf, T = wD + sw + wL, L12 = L * 12;
+  const S = b * d * d / 6, I = b * d * d * d / 12;
+  const M = T * L * L / 8 * 12, V = T * L / 2;
+  const Fbp = gl.Fb * volFactor(L, d, b);
+  const dL = 5 * (wL / 12) * Math.pow(L12, 4) / (384 * E * I), dT = 5 * (T / 12) * Math.pow(L12, 4) / (384 * E * I);
+  const u = { b: M / S / Fbp, v: 1.5 * V / (b * d) / gl.Fv, dl: dL / (L12 / 360), dt: dT / (L12 / 240), f: 0 };
+  const a = charDepth(o.fire);
+  if (a) { const bf = b - 2 * a, df = d - a; u.f = bf > 0 && df > 0 ? Math.max(M / (bf * df * df / 6) / (2.85 * gl.Fb), 1.5 * V / (bf * df) / (2.75 * gl.Fv)) : 9.99; }
+  const umax = Math.max(u.b, u.v, u.dl, u.dt, u.f);
+  return { b, d, L, sw, T, M, V, Fbp, dL, dT, u, umax, ok: umax <= 1 };
+}
+function colCap(b, d, Le, Fc, Emin) {
+  const m = Math.min(b, d); if (m <= 0) return 0;
+  const FcE = 0.822 * Emin / Math.pow(Le / m, 2), al = FcE / Fc, k = (1 + al) / 1.8;
+  return (k - Math.sqrt(k * k - al / 0.9)) * Fc * b * d;
+}
+function columnCheck(o, b, d, P) {
+  const gl = CAT.gl, Le = o.H * 12, cap = colCap(b, d, Le, gl.Fc, gl.Emin * 1e6), a = charDepth(o.fire);
+  const capF = a ? colCap(b - 2 * a, d - 2 * a, Le, gl.Fc * 2.58, gl.Emin * 1e6 * 2.03) : Infinity;
+  const u = { n: P / cap, f: a ? (capF > 0 ? P / capF : 9.99) : 0 }, umax = Math.max(u.n, u.f);
+  return { b, d, P, cap, capF, u, umax, ok: umax <= 1 };
+}
+
+// structural evaluation of one typical bay. cfg = { sys, n, pi, pw, pd, gw, gd, ci }
+function evalStructure(o, cfg) {
+  const P = CAT.panels[cfg.pi], gl = CAT.gl, E = gl.E * 1e6, T2 = cfg.sys !== 'T1', stack = cfg.sys === 'T3';
+  const s = T2 ? o.A / cfg.n : null, Lp = T2 ? s : o.B, pPsf = psfOf(P);
+  const pan = panelCheck(o, P, Lp), Dfl = pPsf + o.sdl;
+  const pur = T2 ? memberCheck(o, cfg.pw, cfg.pd, o.B, Dfl * s, o.LLd * s) : null;
+  const purSW = pur ? pur.sw : 0, extra = T2 ? purSW * o.B / s : 0;
+  const gir = memberCheck(o, cfg.gw, cfg.gd, o.A, Dfl * o.B + extra, o.LLd * o.B);
+  // vibration
+  const wE = pPsf + o.sdl + o.LLv, Ds = P.EI * 1e6;
+  const dp = stripDeflection(wE, Lp, Ds), fp = freqFromDefl(dp);
+  const Ig = cfg.gw * Math.pow(cfg.gd, 3) / 12, lg = wE * o.B + extra + gir.sw;
+  const dg = 5 * (lg / 12) * Math.pow(o.A * 12, 4) / (384 * E * Ig), fg = freqFromDefl(dg);
+  let dj = null, fj = null, W;
+  if (T2) {
+    const Ip = cfg.pw * Math.pow(cfg.pd, 3) / 12, lj = wE * s + purSW;
+    dj = 5 * (lj / 12) * Math.pow(o.B * 12, 4) / (384 * E * Ip); fj = freqFromDefl(dj);
+    const Dj = E * Ip / s, Dg = E * Ig / o.B;
+    const Wj = (lj / s) * 2.0 * Math.pow(Ds / Dj, 0.25) * o.B * o.B, Wg = (lg / o.B) * 1.8 * Math.pow(Dj / Dg, 0.25) * o.A * o.A;
+    W = (dj * Wj + dg * Wg) / (dj + dg);
+  } else {
+    const Dg = E * Ig / o.B, Wj = wE * 2.0 * o.B * o.B, Wg = (lg / o.B) * 1.8 * Math.pow(Ds / Dg, 0.25) * o.A * o.A;
+    W = (dp * Wj + dg * Wg) / (dp + dg);
+  }
+  const fn = dunkerley(T2 ? [fp, fj, fg] : [fp, fg]);
+  const ap = 65 * Math.exp(-0.35 * fn) / (o.damp * W) * 100;
+  // column (one bay of tributary area per floor)
+  const area = o.A * o.B;
+  const framPsf = ((T2 ? cfg.n * cfg.pw * cfg.pd / 144 * o.B : 0) + cfg.gw * cfg.gd / 144 * o.A) * gl.pcf / area;
+  const Pcol = o.stories * (Dfl + framPsf + o.LLd) * area;
+  let col;
+  if (cfg.ci == null) { for (const c of COLS) { col = columnCheck(o, c[0], c[1], Pcol); if (col.ok) break; } }
+  else col = columnCheck(o, COLS[cfg.ci][0], COLS[cfg.ci][1], Pcol);
+  // panel pieces, depth, pick weights
+  const { panW, panMax } = CAT.logi;
+  const Lpan = Lp > panMax ? null : Math.max(Lp, Math.floor(panMax / Lp) * Lp);
+  const depth = stack ? P.t + cfg.pd + cfg.gd : P.t + Math.max(cfg.gd, T2 ? cfg.pd : 0);
+  const wts = { panel: Lpan ? pPsf * panW * Lpan : 0, purlin: T2 ? purSW * o.B : 0, girder: gir.sw * o.A, column: col.b * col.d / 144 * o.H * gl.pcf };
+  const heavy = Object.entries(wts).sort((a, b) => b[1] - a[1])[0];
+  const strOk = pan.ok && (!pur || pur.ok) && gir.ok && col.ok && !!Lpan;
+  const depthOk = !o.maxD || depth <= o.maxD, pickOk = !o.maxPick || heavy[1] <= o.maxPick * 1000;
+  return { cfg, P, T2, stack, s, Lp, pan, pur, gir, col, Pcol, wE, dp, fp, dj, fj, dg, fg, fn, W, ap, Lpan, depth, wts, heavy,
+           strOk, depthOk, pickOk, vibF: fn >= o.target, vibA: ap <= o.alim };
+}
+
+/* ================= quantities, logistics and cost ================= */
+function miles(a, b) {
+  const R = 3959, t = x => x * Math.PI / 180, dLa = t(b[0] - a[0]), dLo = t(b[1] - a[1]);
+  const h = Math.sin(dLa / 2) ** 2 + Math.cos(t(a[0])) * Math.cos(t(b[0])) * Math.sin(dLo / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h)) * 1.25;                        // road factor 1.25
+}
+// quantities for the repeating unit: one bay, or one strip A wide across the whole building section
+function quantities(o, r) {
+  const c = r.cfg, corr = o.layout === 'corr', nb = o.nb, bays = corr ? 2 * nb : 1;
+  const area = corr ? o.A * (2 * nb * o.B + o.Wc) : o.A * o.B;
+  const baysPieces = r.Lpan ? bays * o.A * o.B / (CAT.logi.panW * r.Lpan) : 0;
+  const corrPieces = corr ? o.A / CAT.logi.panW : 0;
+  const n = { panels: baysPieces + corrPieces, pur: r.T2 ? c.n * bays : 0, gir: corr ? 2 * nb + 2 : 1, col: corr ? 2 * nb + 2 : 1 };
+  const cf = { clt: area * r.P.t / 12, pur: n.pur * c.pw * c.pd / 144 * o.B, gir: n.gir * c.gw * c.gd / 144 * o.A, col: n.col * r.col.b * r.col.d / 144 * o.H };
+  return { area, bays, n, cf, picks: n.panels + n.pur + n.gir + n.col };
+}
+function cltReason(m, r) {
+  if (!m.on) return 'turned off'; if (!m.clt) return 'no CLT';
+  if (CAT.logi.panW > m.clt.w) return `max width ${m.clt.w} ft`;
+  if (r.Lpan && r.Lpan > m.clt.L) return `max length ${m.clt.L} ft`;
+  if (r.P.t > m.clt.t) return 'too thick';
+  if (m.grades && !m.grades.includes(r.P.grade)) return `no ${r.P.grade} grade`;
+  return '';
+}
+const glReason = (m, o) => !m.on ? 'turned off' : !m.gl ? 'no glulam' : o.A > 60 ? 'girder over 60 ft' : '';
+function haul(o, m, wt, value, oversize) {
+  const s = SITES[o.site], F = CAT.frt, d = miles(s, m.ll), cross = s[2] !== m.c;
+  const loads = wt / F.payload;
+  const frt = loads * (d * F.rate * (oversize ? 1 + F.osPct / 100 : 1) + F.fixed + (cross ? F.broker : 0));
+  const tar = cross ? value * (m.c === 'CA' ? F.tarCAUS : F.tarUSCA) / 100 : 0;
+  return { d, loads, frt, tar, cross };
+}
+// prices the design with a given CLT supplier and glulam supplier (indexes into CAT.mfrs)
+function priceWith(o, r, q, ic, ig) {
+  const C = CAT, mc = C.mfrs[ic], mg = C.mfrs[ig], c = r.cfg;
+  const cltVal = q.cf.clt * r.P.cost * o.appear * mc.pf;
+  const pur = q.cf.pur * C.gl.cost * glFactor(c.pw) * mg.pf, gir = q.cf.gir * C.gl.cost * glFactor(c.gw) * mg.pf, colv = q.cf.col * C.gl.cost * glFactor(r.col.b) * mg.pf;
+  const oversize = C.logi.panW > 8.5 || (r.Lpan || 0) > 53;
+  const hc = haul(o, mc, q.cf.clt * r.P.pcf, cltVal, oversize);
+  const hg = haul(o, mg, (q.cf.pur + q.cf.gir + q.cf.col) * C.gl.pcf, pur + gir + colv, o.A > 53);
+  const hours = q.n.panels / C.inst.pPanel + (q.n.pur + q.n.gir) / C.inst.pBeam + q.n.col / C.inst.pCol;
+  const parts = {
+    'CLT panels': cltVal, 'Purlins': pur, 'Girders': gir, 'Columns': colv,
+    'Connections': q.n.pur * 2 * (r.stack ? C.conn.bear : C.conn.pur) + q.n.gir * 2 * C.conn.gir + q.n.col * C.conn.col,
+    'Erection': hours * C.inst.crew, 'Freight': hc.frt + hg.frt, 'Tariffs': hc.tar + hg.tar
+  };
+  if (!r.T2) delete parts['Purlins'];
+  const total = Object.values(parts).reduce((a, b) => a + b, 0);
+  return { ic, ig, mc, mg, hc, hg, hours, parts, total, cpsf: total / q.area, oversize };
+}
+function price(o, r) {
+  const q = quantities(o, r), M = CAT.mfrs;
+  const cOK = M.map((m, i) => cltReason(m, r) ? -1 : i).filter(i => i >= 0);
+  const gOK = M.map((m, i) => glReason(m, o) ? -1 : i).filter(i => i >= 0);
+  let best = null;
+  const consider = (ic, ig) => { const p = priceWith(o, r, q, ic, ig); if (!best || p.total < best.total) best = p; };
+  if (o.sup !== 'auto') {
+    const i = +o.sup;
+    if (cOK.includes(i)) { if (!o.split && gOK.includes(i)) consider(i, i); else gOK.forEach(g => consider(i, g)); }
+  } else if (o.split) cOK.forEach(ic => gOK.forEach(ig => consider(ic, ig)));
+  else cOK.filter(i => gOK.includes(i)).forEach(i => consider(i, i));
+  const supOk = !!best;
+  if (!best) best = priceWith(o, r, q, 0, 0);              // price anyway so charts still work
+  return Object.assign(r, { q, pr: best, supOk, cpsf: best.cpsf, cfpsf: (q.cf.clt + q.cf.pur + q.cf.gir + q.cf.col) / q.area,
+    ppk: q.picks / q.area * 1000, ok: r.strOk && r.vibF && r.vibA && r.depthOk && r.pickOk && supOk });
+}
+const evalDesign = (o, cfg) => price(o, evalStructure(o, cfg));
+
+/* ================= optimizer ================= */
+function startIdx(b, L, wplf) {
+  const gl = CAT.gl, L12 = L * 12;
+  const dS = Math.sqrt(6 * (wplf * L * L / 8 * 12) / (b * gl.Fb * 0.9));
+  const dI = Math.cbrt(12 * (5 * (wplf / 12) * Math.pow(L12, 3) * 240 / (384 * gl.E * 1e6)) / b);
+  const i = DEP.findIndex(d => d >= Math.max(dS, dI) * 0.95);
+  return i < 0 ? DEP.length - 1 : i;
+}
+function autosize(o, base) {
+  const P = CAT.panels[base.pi], T2 = base.sys !== 'T1', flush = base.sys === 'T2', s = T2 ? o.A / base.n : o.B;
+  const w = psfOf(P) + o.sdl + o.LLd, fx = o.fix;
+  const cap = d => d <= (o.maxD ? o.maxD - P.t : 99);
+  const lastOf = b => DEP.filter(d => d <= MAXDB * b && cap(d)).length - 1;
+  const fP = T2 && fx.pd != null, fG = fx.gd != null;
+  let lastP = T2 ? (fP ? DEP.indexOf(fx.pd) : lastOf(base.pw)) : 0, lastG = fG ? DEP.indexOf(fx.gd) : lastOf(base.gw);
+  if (lastG < 0 || (T2 && lastP < 0)) return { cfg: Object.assign({}, base, { pd: DEP[0], gd: DEP[0], ci: null }), r: null };
+  let ip = T2 ? (fP ? lastP : Math.min(startIdx(base.pw, o.B, w * s), lastP)) : 0;
+  let ig = fG ? lastG : Math.min(startIdx(base.gw, o.A, w * o.B), lastG), cfg, r;
+  for (let k = 0; k < 90; k++) {
+    if (flush && DEP[ip] > DEP[ig]) { if (ip <= lastG) ig = ip; else break; }   // flush purlins: girder at least as deep
+    cfg = Object.assign({}, base, { pd: T2 ? DEP[ip] : DEP[0], gd: DEP[ig], ci: fx.ci });
+    r = evalStructure(o, cfg);
+    if (!r.pan.ok || !r.Lpan) break;
+    if (T2 && !r.pur.ok) { if (ip < lastP) { ip++; continue; } break; }
+    if (!r.gir.ok) { if (ig < lastG) { ig++; continue; } break; }
+    if (r.vibF && r.vibA) break;
+    if (r.fp < o.target || !r.depthOk) break;
+    const canP = T2 && ip < lastP, canG = ig < lastG;
+    if (canP && (!canG || r.fj <= r.fg)) ip++; else if (canG) ig++; else break;
+  }
+  return { cfg, r: price(o, r) };
+}
+function layouts(o) {
+  const L = [], ok = t => o.sysF === 'all' || o.sysF === t || (o.sysF === 'T23' && t !== 'T1');
+  if (ok('T1') && o.fix.n == null) L.push({ sys: 'T1', n: 0 });
+  const ns = [];
+  if (o.fix.n != null) ns.push(o.fix.n); else { const n0 = Math.max(2, Math.ceil(o.A / 20)), n1 = Math.min(12, Math.floor(o.A / 4)); for (let n = n0; n <= n1; n++) ns.push(n); }
+  ['T2', 'T3'].forEach(t => { if (ok(t)) ns.forEach(n => L.push({ sys: t, n })); });
+  return L;
+}
+function study(o) {
+  const pts = [];
+  CAT.panels.forEach((P, pi) => {
+    if (!P.on || (o.fix.pi != null && o.fix.pi !== pi)) return;
+    layouts(o).forEach(l => {
+      const Lp = l.sys !== 'T1' ? o.A / l.n : o.B;
+      if (Lp > CAT.logi.panMax || !panelCheck(o, P, Lp).ok) { pts.push({ cfg: { sys: l.sys, n: l.n, pi }, r: null }); return; }
+      const pws = l.sys === 'T1' ? [PWS[0]] : PWS.filter(w => o.fix.pw == null || w === o.fix.pw), gws = GWS.filter(w => o.fix.gw == null || w === o.fix.gw);
+      pws.forEach(pw => gws.forEach(gw => { const a = autosize(o, { sys: l.sys, n: l.n, pi, pw, gw }); if (a.r) pts.push(a); }));
+    });
+  });
+  return pts;
+}
+const OBJ = {
+  cost:  { lab: 'Cost, $/sq ft',          v: r => r.cpsf,  f: r => '$' + fmt(r.cpsf, 2) },
+  depth: { lab: 'Structural depth, in.',  v: r => r.depth + r.cpsf / 1000, f: r => fmt(r.depth, 1) + ' in.' },
+  vol:   { lab: 'Timber, cu ft/sq ft',    v: r => r.cfpsf, f: r => fmt(r.cfpsf, 3) + ' cf/sf' },
+  picks: { lab: 'Picks per 1,000 sq ft',  v: r => r.ppk,   f: r => fmt(r.ppk, 1) + ' picks' },
+  freq:  { lab: 'Floor frequency, Hz',    v: r => -r.fn,   f: r => fmt(r.fn, 1) + ' Hz' }
+};
+const rank = (o, list) => list.filter(p => p.r && p.r.ok).sort((a, b) => (OBJ[o.obj].v(a.r) - OBJ[o.obj].v(b.r)) || (a.r.cpsf - b.r.cpsf));
+function whyFail(r) {
+  if (!r.Lpan) return 'panel longer than max length'; if (!r.pan.ok) return 'CLT panel';
+  if (r.pur && !r.pur.ok) return 'purlin at depth limit'; if (!r.gir.ok) return 'girder at depth limit'; if (!r.col.ok) return 'column (largest size fails)';
+  if (!r.depthOk) return 'structural depth limit'; if (!r.pickOk) return 'crane pick limit'; if (!r.supOk) return 'no supplier can make it';
+  if (!r.vibF) return 'frequency target'; if (!r.vibA) return 'acceleration limit'; return '';
+}
+
+/* ================= helpers ================= */
+const $ = id => document.getElementById(id);
+const fmt = (x, n = 2) => (x == null || !isFinite(x)) ? '-' : x.toLocaleString('en-US', { maximumFractionDigits: n, minimumFractionDigits: n });
+const money = x => '$' + fmt(x, 0);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const row = (name, val, unit) => `<tr><td class="name">${name}</td><td>${val}</td><td class="name">${unit || ''}</td></tr>`;
+const niceStep = x => { const p = Math.pow(10, Math.floor(Math.log10(x))), m = x / p; return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 5 ? 5 : 10) * p; };
+const sysName = c => c.sys === 'T1' ? 'CLT on girders' : c.sys === 'T3' ? `CLT on ${c.n} purlins per bay over dropped girders` : `CLT on ${c.n} flush purlins per bay`;
+const sysShort = c => c.sys === 'T1' ? 'No purlins' : c.n + (c.sys === 'T3' ? ' purlins, dropped' : ' purlins, flush');
+const sysColor = c => c.sys === 'T1' ? '#c77d2a' : c.sys === 'T3' ? '#7a52a8' : '#2f6fb5';
+const mfrLabel = m => `${m.name}, ${m.plant}`;
+function members(r) { const c = r.cfg; return `${r.P.name}${r.T2 ? `; purlins ${sz(c.pw, c.pd)}` : ''}; girder ${sz(c.gw, c.gd)}; column ${sz(r.col.b, r.col.d)}`; }
+function supplierText(r) { const p = r.pr; return p.ic === p.ig ? mfrLabel(p.mc) : `CLT ${mfrLabel(p.mc)}; glulam ${mfrLabel(p.mg)}`; }
+function statusOf(r) {
+  if (!r.strOk) return ['bad', 'Fails strength'];
+  if (!r.supOk) return ['bad', 'No supplier'];
+  if (!r.depthOk) return ['bad', 'Too deep'];
+  if (!r.pickOk) return ['bad', 'Pick too heavy'];
+  if (!r.vibF) return ['bad', 'Below frequency target'];
+  if (!r.vibA) return ['warn', 'Acceleration high'];
+  return ['good', 'Pass'];
+}
+function parseList(s) { return [...new Set(s.split(/[\s,;]+/).map(Number).filter(x => x >= 8 && x <= 60))].sort((a, b) => a - b); }
+
+const IDS = ['layout', 'nb', 'Wc', 'gA', 'gB', 'sysF', 'occ', 'sdl', 'stories', 'H', 'fire', 'maxD', 'maxPick', 'appear', 'site', 'sup', 'split', 'target', 'alim', 'damp', 'obj'];
+function readInputs() {
+  const [LLd, LLv] = $('occ').value.split('|').map(Number);
+  return {
+    layout: $('layout').value, nb: +$('nb').value, Wc: +$('Wc').value,
+    A: +$('gA').value, B: +$('gB').value, sysF: $('sysF').value,
+    LLd, LLv, sdl: +$('sdl').value, stories: +$('stories').value, H: +$('H').value, fire: +$('fire').value,
+    maxD: +$('maxD').value, maxPick: +$('maxPick').value, appear: +$('appear').value,
+    site: $('site').value, sup: $('sup').value, split: $('split').checked,
+    target: +$('target').value, alim: +$('alim').value, damp: +$('damp').value / 100, obj: $('obj').value,
+    fix: { n: null, pi: null, pw: null, pd: null, gw: null, gd: null, ci: null }
+  };
+}
+function setInputs(o) {
+  $('layout').value = o.layout; $('nb').value = o.nb; $('Wc').value = o.Wc; $('gA').value = o.A; $('gB').value = o.B; $('sysF').value = o.sysF;
+  $('occ').value = o.LLd + '|' + o.LLv; $('sdl').value = o.sdl; $('stories').value = o.stories; $('H').value = o.H; $('fire').value = String(o.fire);
+  $('maxD').value = String(o.maxD); $('maxPick').value = String(o.maxPick); $('appear').value = String(o.appear);
+  $('site').value = o.site; $('sup').value = o.sup; $('split').checked = o.split;
+  $('target').value = o.target; $('alim').value = String(o.alim); $('damp').value = o.damp * 100; $('obj').value = o.obj;
+}
+const FIX = ['n', 'pi', 'pw', 'pd', 'gw', 'gd', 'ci'];
+function fillFixSelects() { return;
+  const any = [['any', 'Optimize']], keep = id => $(id).value || 'any';
+  const set = (id, opts) => { const v = keep(id); $(id).innerHTML = any.concat(opts).map(([a, t]) => `<option value="${a}">${esc(t)}</option>`).join(''); $(id).value = [...$(id).options].some(x => x.value === v) ? v : 'any'; };
+  set('fx_n', Array.from({ length: 11 }, (_, i) => [i + 2, String(i + 2)]));
+  set('fx_pi', CAT.panels.map((P, i) => [i, P.name]));
+  set('fx_pw', PWS.map(w => [w, wl(w) + ' in.'])); set('fx_gw', GWS.map(w => [w, wl(w) + ' in.']));
+  set('fx_pd', DEP.map(d => [d, dl(d) + ' in.'])); set('fx_gd', DEP.map(d => [d, dl(d) + ' in.']));
+  set('fx_ci', COLS.map((c, i) => [i, sz(c[0], c[1])]));
+}
+
+/* ================= state ================= */
+const S = { o: null, pts: [], ranked: [], best: null, cur: null, ms: 0 };
+let pinned = null;
+const runs = [];
+let gridRes = null, lastReportText = '';
+
+/* ================= graphics ================= */
+function costChart(r) {
+  const parts = Object.entries(r.pr.parts).map(([k, v]) => [k, v / r.q.area]);
+  const total = r.cpsf, W = 700, H = 290, ml = 52, mr = 16, mt = 30, mb = 56;
+  const maxV = Math.max(...parts.map(p => p[1])), step = niceStep(maxV / 5), top = Math.ceil(maxV * 1.15 / step) * step;
+  const plotH = H - mt - mb, gw = (W - ml - mr) / parts.length, bw = Math.min(46, gw * 0.55), y = v => H - mb - v / top * plotH;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Cost breakdown" style="width:100%;height:auto;font:11.5px system-ui,sans-serif">`;
+  for (let v = 0; v <= top + 1e-9; v += step) s += `<line x1="${ml}" x2="${W - mr}" y1="${y(v)}" y2="${y(v)}" stroke="#eee"/><text x="${ml - 6}" y="${y(v) + 4}" text-anchor="end" fill="#6b7078">$${+v.toFixed(2)}</text>`;
+  s += `<text transform="translate(13,${mt + plotH / 2}) rotate(-90)" text-anchor="middle" fill="#6b7078">$ per sq ft</text>`;
+  parts.forEach(([k, v], i) => {
+    const x = ml + i * gw + gw / 2, pct = v / total * 100;
+    s += `<rect x="${x - bw / 2}" y="${y(v)}" width="${bw}" height="${H - mb - y(v)}" fill="#2f6fb5" rx="2"><title>${k}: $${fmt(v, 2)}/sf, ${fmt(pct, 1)}%</title></rect>`;
+    s += `<text x="${x}" y="${y(v) - 17}" text-anchor="middle" fill="#1f2328" font-weight="600">${fmt(pct, 0)}%</text>`;
+    s += `<text x="${x}" y="${y(v) - 4}" text-anchor="middle" fill="#6b7078" font-size="10.5">$${fmt(v, 2)}</text>`;
+    s += `<text x="${x}" y="${H - mb + 16}" text-anchor="middle" fill="#1f2328">${k}</text>`;
+  });
+  s += `<line x1="${ml}" x2="${W - mr}" y1="${H - mb}" y2="${H - mb}" stroke="#999"/>`;
+  s += `<text x="${ml}" y="${H - 10}" fill="#1f2328" font-weight="600">Total $${fmt(total, 2)} per sq ft (${money(r.pr.total)} per ${r.q.bays > 1 ? 'strip' : 'bay'})</text>`;
+  return s + '</svg>';
+}
+
+function planSvg(o, r) {
+  const c = r.cfg, corr = o.layout === 'corr', nb = corr ? o.nb : 0;
+  const totalB = corr ? 2 * nb * o.B + o.Wc : o.B;
+  const W = 640, ml = 74, mr = 30, mt = 56;
+  const k = Math.min((W - ml - mr) / o.A, 340 / totalB);
+  const X = o.A * k, x0 = ml, y0 = mt, Y = totalB * k, H = y0 + Y + 92;
+  const L = (x1, y1, x2, y2, st, ex) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${st}" ${ex || ''}/>`;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Plan view" style="width:100%;height:auto;font:12px system-ui,sans-serif">`;
+  s += `<defs><marker id="ah" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2f6fb5"/></marker></defs>`;
+  // bay bands top to bottom
+  const bands = [];
+  if (corr) { for (let i = 0; i < nb; i++) bands.push(['bay', o.B]); bands.push(['corr', o.Wc]); for (let i = 0; i < nb; i++) bands.push(['bay', o.B]); }
+  else bands.push(['bay', o.B]);
+  let y = y0, purl = ''; const lines = [y0];
+  bands.forEach(([t, h]) => {
+    const hh = h * k;
+    s += `<rect x="${x0}" y="${y}" width="${X}" height="${hh}" fill="${t === 'corr' ? '#e9e4d8' : '#efe3cf'}" stroke="#d4c2a0"/>`;
+    if (t === 'corr') {
+      s += `<rect x="${x0}" y="${y + hh * 0.3}" width="${X}" height="${hh * 0.4}" fill="#cfe0f2" opacity=".8"/>`;
+      s += `<text x="${x0 + 8}" y="${y + hh / 2 + 4}" fill="#2f6fb5">corridor ${o.Wc} ft: main MEP run</text>`;
+      for (let yy = y + 6; yy < y + hh; yy += 12) {}
+    } else if (r.T2) {
+      for (let yy = y + 7; yy < y + hh; yy += 13) s += L(x0, yy, x0 + X, yy, '#e0d2b4');
+      const pt = Math.max(4, c.pw / 12 * k);
+      for (let i = 0; i <= c.n; i++) { const x = x0 + i * r.s * k; purl += `<rect x="${x - pt / 2}" y="${y}" width="${pt}" height="${hh}" fill="#b07a45" ${r.stack ? 'stroke="#5a3a18" stroke-width="0.8"' : ''}/>`; }
+      if (corr) for (let i = 0; i < c.n; i++) { const xm = x0 + (i + 0.5) * r.s * k; s += L(xm, y + 4, xm, y + hh - 4, '#7fb0de', 'stroke-width="3" stroke-dasharray="2 3" opacity=".7"'); }
+    } else {
+      for (let x = x0 + 7; x < x0 + X; x += 13) s += L(x, y, x, y + hh, '#e0d2b4');
+      if (corr) for (let i = 0; i < 3; i++) { const xm = x0 + (i + 0.5) * X / 3; s += L(xm, y + 4, xm, y + hh - 4, '#7fb0de', 'stroke-width="3" stroke-dasharray="2 3" opacity=".7"'); }
+    }
+    y += hh; lines.push(y);
+  });
+  const gt = Math.max(6, c.gw / 12 * k), cs = Math.max(10, r.col.b / 12 * k);
+  if (!r.stack) s += purl;
+  lines.forEach(yy => { s += `<rect x="${x0}" y="${yy - gt / 2}" width="${X}" height="${gt}" fill="#7a4a1f"/>`; [x0, x0 + X].forEach(x => s += `<rect x="${x - cs / 2}" y="${yy - cs / 2}" width="${cs}" height="${cs}" fill="#444"/>`); });
+  if (r.stack) s += purl;                    // purlins bear on top of the dropped girders
+  // span note on the first bay
+  const yb0 = y0, yb1 = y0 + o.B * k;
+  if (r.T2) { const xa = x0 + 6, xb = x0 + r.s * k - 6, ya = (yb0 + yb1) / 2; if (xb - xa > 24) s += L(xa, ya, xb, ya, '#2f6fb5', 'stroke-width="1.5" marker-start="url(#ah)" marker-end="url(#ah)"') + `<text x="${(xa + xb) / 2}" y="${ya - 6}" text-anchor="middle" fill="#2f6fb5">CLT ${fmt(r.s, 1)} ft</text>`; }
+  else { const xa = x0 + X - 24; s += L(xa, yb0 + gt, xa, yb1 - gt, '#2f6fb5', 'stroke-width="1.5" marker-start="url(#ah)" marker-end="url(#ah)"') + `<text x="${xa - 6}" y="${(yb0 + yb1) / 2 + 4}" text-anchor="end" fill="#2f6fb5">CLT ${o.B} ft</text>`; }
+  s += `<text x="${x0}" y="${y0 - 28}" fill="#1f2328" font-weight="600">${sysName(c)}</text><text x="${x0}" y="${y0 - 12}" fill="#6b7078">${r.T2 ? `purlins ${sz(c.pw, c.pd)}; ` : ''}girders ${sz(c.gw, c.gd)}; columns ${sz(r.col.b, r.col.d)}</text>`;
+  const yd = y0 + Y + 26;
+  s += L(x0, yd, x0 + X, yd, '#555') + L(x0, yd - 5, x0, yd + 5, '#555') + L(x0 + X, yd - 5, x0 + X, yd + 5, '#555');
+  s += `<text x="${x0 + X / 2}" y="${yd + 16}" text-anchor="middle" fill="#555">A = ${o.A} ft (girder span, along corridor)</text>`;
+  const xd = x0 - 36;
+  s += L(xd, yb0, xd, yb1, '#555') + L(xd - 5, yb0, xd + 5, yb0, '#555') + L(xd - 5, yb1, xd + 5, yb1, '#555');
+  s += `<text transform="translate(${xd - 8},${(yb0 + yb1) / 2}) rotate(-90)" text-anchor="middle" fill="#555">B = ${o.B} ft</text>`;
+  const yl = H - 12; let lx = x0;
+  [['#7a4a1f', 'girder'], ['#b07a45', 'purlin'], ['#444', 'column'], ['#efe3cf', 'CLT (lines = strong direction)'], ['#7fb0de', 'MEP branch']].forEach(([col, t]) => {
+    if (!r.T2 && t === 'purlin') return; if (!corr && t === 'MEP branch') return;
+    s += `<rect x="${lx}" y="${yl - 9}" width="14" height="9" fill="${col}"/><text x="${lx + 19}" y="${yl}" fill="#6b7078">${t}</text>`; lx += 30 + t.length * 6.2;
+  });
+  return s + '</svg>';
+}
+
+function heatColorT(t) { return `hsl(${Math.round((1 - Math.max(0, Math.min(1, t))) * 125)} 55% 86%)`; }
+function heatHtml(o) {
+  const lays = layouts(o), on = CAT.panels.map((P, i) => [P, i]).filter(([P]) => P.on), cell = new Map();
+  S.pts.forEach((p, i) => {
+    const key = p.cfg.pi + '|' + p.cfg.sys + p.cfg.n, prev = cell.get(key);
+    if (!p.r || !p.r.ok) { if (!prev) cell.set(key, { i: -1, why: p.r ? whyFail(p.r) : 'CLT panel' }); return; }
+    if (!prev || prev.i < 0 || OBJ[o.obj].v(p.r) < OBJ[o.obj].v(S.pts[prev.i].r)) cell.set(key, { i });
+  });
+  const vals = [...cell.values()].filter(c => c.i >= 0).map(c => OBJ[o.obj].v(S.pts[c.i].r));
+  const lo = Math.min(...vals), hi = Math.max(...vals), cur = S.cur ? S.cur.cfg : null;
+  let h = '<table class="heat"><tr><th>Panel \\ layout</th>' + lays.map(l => `<th>${sysShort(l)}<br><span class="ref">CLT ${fmt(l.sys !== 'T1' ? o.A / l.n : o.B, 1)} ft</span></th>`).join('') + '</tr>';
+  on.forEach(([P, pi]) => {
+    h += `<tr><th>${esc(P.name)}</th>` + lays.map(l => {
+      const c = cell.get(pi + '|' + l.sys + l.n);
+      if (!c || c.i < 0) return `<td class="none" title="${esc(c ? c.why : '')}">-</td>`;
+      const p = S.pts[c.i], isCur = cur && cur.pi === pi && cur.sys === l.sys && (l.sys === 'T1' || cur.n === l.n);
+      return `<td class="${S.best === p ? 'best' : ''} ${isCur ? 'cur' : ''}" style="background:${heatColorT(hi > lo ? (OBJ[o.obj].v(p.r) - lo) / (hi - lo) : 0)}" data-pick="${c.i}" title="${esc(members(p.r))}">${OBJ[o.obj].f(p.r)}<br><small>${o.obj === 'depth' ? '$' + fmt(p.r.cpsf, 1) : fmt(p.r.depth, 0) + ' in.'}, ${fmt(p.r.fn, 1)} Hz</small></td>`;
+    }).join('') + '</tr>';
+  });
+  return h + '</table>';
+}
+function scatterSvg(o) {
+  const yk = $('sc_y').value, yv = r => yk === 'depth' ? r.depth : r.fn;
+  const pts = S.pts.map((p, i) => [p, i]).filter(([p]) => p.r && p.r.strOk);
+  if (!pts.length) return '<div class="hint">No design passes strength.</div>';
+  const W = 660, H = 330, ml = 54, mr = 18, mt = 16, mb = 44;
+  const xs = pts.map(([p]) => p.r.cpsf), ys = pts.map(([p]) => yv(p.r));
+  const x0 = Math.floor(Math.min(...xs) * 0.95), x1 = Math.max(...xs) * 1.03;
+  const y1 = Math.max(...ys, yk === 'fn' ? o.target : (o.maxD || 0)) * 1.08;
+  const px = x => ml + (x - x0) / (x1 - x0) * (W - ml - mr), py = y => H - mb - y / y1 * (H - mt - mb);
+  const tx = niceStep((x1 - x0) / 5), ty = niceStep(y1 / 5);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Cost trade-off" style="width:100%;height:auto;font:11px system-ui,sans-serif">`;
+  for (let x = Math.ceil(x0 / tx) * tx; x <= x1; x += tx) s += `<line x1="${px(x)}" x2="${px(x)}" y1="${mt}" y2="${H - mb}" stroke="#eee"/><text x="${px(x)}" y="${H - mb + 14}" text-anchor="middle" fill="#6b7078">$${+x.toFixed(1)}</text>`;
+  for (let y = 0; y <= y1; y += ty) s += `<line x1="${ml}" x2="${W - mr}" y1="${py(y)}" y2="${py(y)}" stroke="#eee"/><text x="${ml - 6}" y="${py(y) + 4}" text-anchor="end" fill="#6b7078">${+y.toFixed(1)}</text>`;
+  s += `<text x="${(ml + W - mr) / 2}" y="${H - 6}" text-anchor="middle" fill="#6b7078">Installed framing cost, $ per sq ft</text>`;
+  s += `<text transform="translate(14,${(mt + H - mb) / 2}) rotate(-90)" text-anchor="middle" fill="#6b7078">${yk === 'depth' ? 'Structural depth, in.' : 'Floor frequency, Hz'}</text>`;
+  const lim = yk === 'fn' ? o.target : o.maxD;
+  if (lim) s += `<line x1="${ml}" x2="${W - mr}" y1="${py(lim)}" y2="${py(lim)}" stroke="${yk === 'fn' ? '#2e7d4f' : '#b3372f'}" stroke-dasharray="5 4"/><text x="${W - mr - 4}" y="${py(lim) - 5}" text-anchor="end" fill="${yk === 'fn' ? '#2e7d4f' : '#b3372f'}" font-weight="600">${yk === 'fn' ? 'target ' + fmt(lim, 1) + ' Hz' : 'max depth ' + lim + ' in.'}</text>`;
+  const dot = ([p, i]) => `<circle cx="${px(p.r.cpsf)}" cy="${py(yv(p.r))}" r="3.4" fill="${!p.r.ok ? '#c3c6cb' : sysColor(p.cfg)}" fill-opacity="${p.r.ok ? .8 : .55}" data-pick="${i}" style="cursor:pointer"><title>${esc(sysName(p.cfg))}: ${esc(members(p.r))}. $${fmt(p.r.cpsf, 2)}/sf, ${fmt(p.r.depth, 1)} in. deep, ${fmt(p.r.fn, 1)} Hz</title></circle>`;
+  pts.filter(([p]) => !p.r.ok).forEach(d => s += dot(d));
+  pts.filter(([p]) => p.r.ok).forEach(d => s += dot(d));
+  if (S.best) s += `<circle cx="${px(S.best.r.cpsf)}" cy="${py(yv(S.best.r))}" r="9" fill="none" stroke="#2e7d4f" stroke-width="2"/>`;
+  if (S.cur && S.cur.r.strOk) s += `<circle cx="${px(S.cur.r.cpsf)}" cy="${py(yv(S.cur.r))}" r="9" fill="none" stroke="#2f6fb5" stroke-width="2.5" stroke-dasharray="3 2"/>`;
+  return s + '</svg>';
+}
+
+/* ================= qualitative notes ================= */
+function considerations(o, r) {
+  const c = r.cfg, N = [], add = (k, t) => N.push(`<li class="${k}">${t}</li>`);
+  const corr = o.layout === 'corr';
+  add(r.depthOk ? 'ok' : 'bad', r.stack
+    ? `Structural depth ${fmt(r.depth, 1)} in. (${fmt(r.P.t, 3)} in. CLT + ${dl(c.pd)} in. purlin + ${dl(c.gd)} in. dropped girder, stacked)${o.maxD ? ` against a ${o.maxD} in. limit` : ''}. Between girders it is only ${fmt(r.P.t + c.pd, 1)} in.`
+    : `Structural depth ${fmt(r.depth, 1)} in. (${fmt(r.P.t, 3)} in. CLT + ${dl(Math.max(c.gd, r.T2 ? c.pd : 0))} in. girder${r.T2 ? ', purlins hung flush' : ''})${o.maxD ? ` against a ${o.maxD} in. limit` : ''}.${r.T2 ? ` Under purlins only: ${fmt(r.P.t + c.pd, 1)} in.` : ''}`);
+  if (r.stack) add('ok', `Purlins bear on top of the girders: simple bearing connections (cheaper than hangers) and fewer tolerance problems. Ducts and pipes cross the girder line through the ${dl(c.pd)} in. high by ${fmt(r.s - c.pw / 12, 1)} ft wide gaps between purlins, with no girder penetrations.`);
+  if (corr) {
+    if (r.stack) add('ok', 'The corridor main can run above the corridor-side girder in the purlin gaps, so branches leave the corridor without dropping below the girder.');
+    else if (r.T2) add('ok', `MEP branches run parallel to the purlins, so ducts sit between them in ${fmt(r.s - c.pw / 12, 1)} ft wide pockets ${dl(c.pd)} in. deep without penetrations.`);
+    else add('info', 'No purlins: branch ducts run below the CLT with nothing to cross inside the bay, but there are no pockets to hide them in.');
+    if (!r.stack) add('warn', `Every branch leaves the corridor across the corridor-side girder (${dl(c.gd)} in. deep). Plan for penetrations, a drop, a shallower girder on that line, or a dropped-girder layout.`);
+  }
+  add(r.fn >= 15 ? 'ok' : r.vibF ? 'info' : 'bad', `Floor frequency ${fmt(r.fn, 1)} Hz (${r.fn < 3 ? 'below 3 Hz' : r.fn < 15 ? '3 to 15 Hz band, guide recommends a more detailed check' : 'above 15 Hz'}); estimated acceleration ${fmt(r.ap, 2)}% g.`);
+  add(o.fire ? 'info' : 'ok', o.fire ? `${o.fire} hour exposed timber: about ${fmt(charDepth(o.fire), 1)} in. of char allowed on beams and the panel underside. Connections need protection or concealment.` : 'No fire rating: exposed timber and connections with no char allowance.');
+  add(r.pickOk ? 'ok' : 'bad', `Heaviest pick ${fmt(r.heavy[1] / 1000, 1)} kip (${r.heavy[0]})${o.maxPick ? ` against a ${o.maxPick} kip crane limit` : ''}. ${fmt(r.ppk, 1)} picks per 1,000 sq ft, about ${fmt(r.pr.hours / r.q.area * 1000, 1)} crane hours per 1,000 sq ft.`);
+  add(r.pr.oversize ? 'warn' : 'ok', r.pr.oversize ? `Panels ${CAT.logi.panW} ft wide${(r.Lpan || 0) > 53 ? ' and over 53 ft long' : ''} ship as oversize loads (permits, higher freight). Panels 8 ft wide or narrower avoid this but add picks.` : 'Panels ship as standard loads.');
+  add('info', `Repetition: ${r.T2 ? 3 : 2} glulam member sizes per floor, panels ${CAT.logi.panW} x ${fmt(r.Lpan || 0, 1)} ft.`);
+  add(r.supOk ? 'info' : 'bad', r.supOk ? `Supplier: ${esc(supplierText(r))}, ${fmt(r.pr.hc.d, 0)} mi by road${r.pr.hc.cross || r.pr.hg.cross ? ', crosses the border' : ''}. Freight ${money(r.pr.parts.Freight / r.q.area * 1000)} per 1,000 sq ft.` : 'No listed manufacturer can make this panel size and grade.');
+  if (r.pr.hc.cross || r.pr.hg.cross) add('warn', 'Cross-border supply: CUSMA-compliant Canadian CLT and glulam currently enter the US without the new tariffs, but this has changed several times in 2025 and 2026. Confirm before pricing.');
+  return N.join('');
+}
+function supplierRows(o, r) {
+  const q = r.q;
+  const rows = CAT.mfrs.map((m, i) => {
+    const why = cltReason(m, r) || glReason(m, o);
+    const p = priceWith(o, r, q, i, i), d = miles(SITES[o.site], m.ll);
+    const chosen = r.pr.ic === i || r.pr.ig === i;
+    return { m, i, why, p, d, chosen };
+  }).sort((a, b) => (!!a.why - !!b.why) || a.p.cpsf - b.p.cpsf);
+  return '<table class="t"><tr><th>Manufacturer</th><th>Plant</th><th class="l">Makes</th><th>Max CLT, ft</th><th>Road mi</th><th>Freight $/sf</th><th>Tariff $/sf</th><th>Delivered total $/sf</th><th class="l">Status</th></tr>' +
+    rows.map(x => {
+      const m = x.m, makes = [m.clt ? 'CLT' : '', m.gl ? 'glulam' : '', m.other ? 'MPP, LVL' : ''].filter(Boolean).join(', ');
+      const size = m.clt ? `${m.clt.w} x ${m.clt.L}${m.clt.known ? '' : ' <span class="tag ph">assumed</span>'}` : '-';
+      return `<tr class="${x.chosen ? 'sel' : x.why ? 'off' : ''}"><td>${esc(m.name)}</td><td>${esc(m.plant)}</td><td class="l">${makes}</td><td>${size}</td><td>${fmt(x.d, 0)}</td>` +
+        (x.why ? `<td>-</td><td>-</td><td>-</td><td class="l">${esc(x.why)}</td>` :
+          `<td>${fmt(x.p.parts.Freight / q.area, 2)}</td><td>${fmt(x.p.parts.Tariffs / q.area, 2)}</td><td><b>${fmt(x.p.cpsf, 2)}</b></td><td class="l">${x.chosen ? '<span class="chip good">selected</span>' : 'can supply'}</td>`) + '</tr>';
+    }).join('') + '</table>';
+}
+
+/* ================= render ================= */
+function render() {
+  const o = readInputs();
+  $('corrbox').style.display = o.layout === 'corr' ? '' : 'none';
+  $('gA_o').textContent = o.A + ' ft'; $('gB_o').textContent = o.B + ' ft';
+  $('sdl_o').textContent = o.sdl + ' psf'; $('stories_o').textContent = o.stories;
+  $('H_o').textContent = fmt(o.H, 1) + ' ft'; $('target_o').textContent = fmt(o.target, 1) + ' Hz';
+  $('damp_o').textContent = fmt(o.damp * 100, 1) + '%';
+  const t0 = performance.now();
+  S.o = o; S.pts = study(o); S.ranked = rank(o, S.pts); S.best = S.ranked[0] || null;
+  S.ms = performance.now() - t0;
+  let cfg = pinned || (S.best && S.best.cfg);
+  if (!cfg) { const any = S.pts.filter(p => p.r).sort((a, b) => b.r.fn - a.r.fn)[0]; cfg = any && any.cfg; }
+  if (!cfg) cfg = { sys: 'T2', n: Math.max(2, Math.ceil(o.A / 10)), pi: 4, pw: 6.75, pd: 24, gw: 10.75, gd: 36, ci: null };
+  S.cur = { cfg, r: evalDesign(o, cfg) };
+  renderStudy(o); renderDesign(o); renderRuns(); renderGrid(); renderReport(o);
+  const cs = $('calcstat'); cs.textContent = `Recalculated ${S.pts.filter(p => p.r).length} designs in ${fmt(S.ms, 0)} ms at ${new Date().toLocaleTimeString()}`;
+  cs.classList.add('flash'); clearTimeout(cs._t); cs._t = setTimeout(() => cs.classList.remove('flash'), 600);
+}
+
+function renderStudy(o) {
+  const b = S.best;
+  $('studyinfo').textContent = `${S.pts.filter(p => p.r).length} sized designs (${S.ranked.length} pass every check) across ${CAT.panels.filter(p => p.on).length} panels and ${layouts(o).length} layouts, in ${fmt(S.ms, 0)} ms. ${o.layout === 'corr' ? `Costs are per sq ft of a ${o.A} ft wide strip across ${2 * o.nb} bays and the corridor.` : 'Costs are per sq ft of one bay.'}`;
+  if (!b) {
+    const cnt = {}; S.pts.forEach(p => { const k = p.r ? whyFail(p.r) : 'CLT panel'; cnt[k] = (cnt[k] || 0) + 1; });
+    const why = Object.entries(cnt).sort((a, c) => c[1] - a[1]).map(([k, v]) => `${k} (${v})`).join(', ');
+    $('bestbox').innerHTML = `<span class="chip bad">No design passes every check.</span><div class="hint">What governs: ${esc(why)}.</div>`;
+  } else {
+    const r = b.r;
+    $('bestbox').innerHTML = `<div class="big"><span class="num">$${fmt(r.cpsf, 2)}</span><span class="unit">per sq ft</span><span class="chip good">${esc(sysName(b.cfg))}</span></div>
+      <div style="margin-top:6px">${esc(members(r))}</div><div class="hint">From ${esc(supplierText(r))}</div>
+      <div class="kpis">
+        <div class="kpi"><b>${fmt(r.depth, 1)} in.</b><span>structural depth</span></div>
+        <div class="kpi"><b>${fmt(r.fn, 1)} Hz</b><span>floor frequency</span></div>
+        <div class="kpi"><b>${fmt(r.ap, 2)}% g</b><span>peak acceleration</span></div>
+        <div class="kpi"><b>${fmt(r.ppk, 1)}</b><span>picks per 1,000 sq ft</span></div>
+        <div class="kpi"><b>${fmt(r.heavy[1] / 1000, 1)} kip</b><span>heaviest pick</span></div>
+        <div class="kpi"><b>${fmt(r.cfpsf, 3)}</b><span>timber, cu ft per sq ft</span></div>
+      </div>
+      <div class="actions" style="margin:12px 0 0"><button class="btn" data-pick="${S.pts.indexOf(b)}">Open on the Design tab</button></div>`;
+  }
+  const show = b ? b.r : S.cur.r;
+  $('cb_for').textContent = b ? '(best option)' : '(no passing design; showing the design tab design)';
+  $('costchart').innerHTML = costChart(show);
+  $('notes').innerHTML = considerations(o, show);
+  $('suppliers').innerHTML = supplierRows(o, show);
+  $('heat').innerHTML = heatHtml(o);
+  $('scatter').innerHTML = scatterSvg(o);
+  const sl = S.ranked.slice(0, 8);
+  $('short').innerHTML = !sl.length ? '<div class="hint">Nothing passes yet.</div>' :
+    '<table class="t"><tr><th>#</th><th>Layout</th><th>Panel</th><th>Purlin</th><th>Girder</th><th>Column</th><th>$/sf</th><th>Depth, in.</th><th>Hz</th><th>Picks/1000 sf</th><th class="l">Supplier</th><th></th></tr>' +
+    sl.map((p, k) => { const r = p.r, c = p.cfg, i = S.pts.indexOf(p);
+      return `<tr><td>${k + 1}</td><td class="l">${sysShort(c)}</td><td class="l">${esc(r.P.name)}</td><td>${r.T2 ? sz(c.pw, c.pd) : '-'}</td><td>${sz(c.gw, c.gd)}</td><td>${sz(r.col.b, r.col.d)}</td><td>${fmt(r.cpsf, 2)}</td><td>${fmt(r.depth, 1)}</td><td>${fmt(r.fn, 1)}</td><td>${fmt(r.ppk, 1)}</td><td class="l">${esc(r.pr.mc.name + ' ' + r.pr.mc.plant.split(',')[0])}</td>` +
+        `<td><button class="btn small" data-pick="${i}">Open</button> <button class="btn small" data-act="run-one" data-pick="${i}">Add run</button></td></tr>`; }).join('') + '</table>';
+}
+
+function fillSelect(id, opts, val) {
+  const el = $(id), html = opts.map(([v, t]) => `<option value="${v}">${esc(t)}</option>`).join('');
+  if (el.dataset.h !== html) { el.innerHTML = html; el.dataset.h = html; }
+  el.value = String(val);
+}
+function utilTd(u, gov) { return `<td class="${u > 1 ? 'u-bad' : (gov ? 'u-gov' : '')}">${u ? fmt(u, 2) : '-'}</td>`; }
+function strRows(r) {
+  const line = (name, size, u, umax, ok) => `<tr><td>${name}</td><td>${size}</td>` + ['b', 'v', 'dl', 'dt', 'f'].map(k => utilTd(u[k], u[k] === umax)).join('') + `<td><span class="chip ${ok ? 'good' : 'bad'}">${ok ? 'ok' : 'fails'}</span></td></tr>`;
+  let h = '<tr><th>Member</th><th>Size and span</th><th>Bending</th><th>Shear</th><th>Live defl. L/360</th><th>Total defl. L/240</th><th>Fire</th><th></th></tr>';
+  h += line('CLT panel', `${esc(r.P.name)}, ${fmt(r.Lp, 1)} ft`, r.pan.u, r.pan.umax, r.pan.ok);
+  if (r.T2) h += line('Purlin', `${sz(r.pur.b, r.pur.d)}, ${fmt(r.pur.L, 0)} ft`, r.pur.u, r.pur.umax, r.pur.ok);
+  h += line('Girder', `${sz(r.gir.b, r.gir.d)}, ${fmt(r.gir.L, 0)} ft`, r.gir.u, r.gir.umax, r.gir.ok);
+  h += `<tr><td>Column</td><td>${sz(r.col.b, r.col.d)}, ${fmt(r.Pcol / 1000, 1)} kip</td>${utilTd(r.col.u.n, r.col.u.n === r.col.umax)}<td>-</td><td>-</td><td>-</td>${utilTd(r.col.u.f, r.col.u.f === r.col.umax)}<td><span class="chip ${r.col.ok ? 'good' : 'bad'}">${r.col.ok ? 'ok' : 'fails'}</span></td></tr>`;
+  return h;
+}
+function vibRows(r, o) {
+  return row('Expected weight (panel + dead + vibration live)', fmt(r.wE, 1), 'psf') +
+    row(`Panel frequency (${fmt(r.Lp, 1)} ft span)`, fmt(r.fp, 1), 'Hz') +
+    (r.T2 ? row(`Purlin frequency (${o.B} ft span)`, fmt(r.fj, 1), 'Hz') : '') +
+    row(`Girder frequency (${o.A} ft span)`, fmt(r.fg, 1), 'Hz') +
+    row('Floor frequency, 1/f^2 = sum of 1/f_i^2', `<b>${fmt(r.fn, 1)}</b>`, `Hz (target ${fmt(o.target, 1)})`) +
+    row('Effective weight', fmt(r.W / 1000, 1), 'kip') +
+    row('Peak acceleration, 65 lb x exp(-0.35 f) / (damping x W)', `<b>${fmt(r.ap, 2)}</b>`, `% g (limit ${fmt(o.alim, 1)})`);
+}
+function qtyRows(r, o) {
+  const q = r.q, c = r.cfg;
+  return row('Floor area', fmt(q.area, 0), 'sq ft') +
+    row('CLT', `${fmt(q.cf.clt, 0)} cu ft; ${fmt(q.n.panels, 1)} panels (${CAT.logi.panW} x ${fmt(r.Lpan || 0, 1)} ft in bays${o.layout === 'corr' ? `, ${CAT.logi.panW} x ${o.Wc} ft in the corridor` : ''})`, '') +
+    (r.T2 ? row('Purlins', `${q.n.pur} x ${sz(c.pw, c.pd)} x ${o.B} ft, ${fmt(q.cf.pur, 0)} cu ft`, '') : '') +
+    row('Girders', `${q.n.gir} x ${sz(c.gw, c.gd)} x ${o.A} ft, ${fmt(q.cf.gir, 0)} cu ft`, '') +
+    row('Columns', `${q.n.col} x ${sz(r.col.b, r.col.d)} x ${fmt(o.H, 1)} ft, ${fmt(q.cf.col, 0)} cu ft`, '') +
+    row('Timber per sq ft', fmt(r.cfpsf, 3), 'cu ft/sq ft') +
+    row('Crane picks', fmt(q.picks, 1), `${fmt(r.ppk, 1)} per 1,000 sq ft`) +
+    row('Crane and crew time', fmt(r.pr.hours, 1), 'hours') +
+    row('Heaviest pick', `${fmt(r.heavy[1] / 1000, 2)} kip`, r.heavy[0]) +
+    row('Truckloads', `${fmt(r.pr.hc.loads + r.pr.hg.loads, 1)}${r.pr.oversize ? ' (CLT oversize)' : ''}`, `${fmt(r.pr.hc.d, 0)} mi`);
+}
+function costRows(r) {
+  const tot = r.pr.total, a = r.q.area;
+  return Object.entries(r.pr.parts).map(([k, v]) => row(k, money(v), `$${fmt(v / a, 2)}/sf, ${fmt(v / tot * 100, 0)}%`)).join('') +
+    row('Total', '<b>' + money(tot) + '</b>', `<b>$${fmt(r.cpsf, 2)}/sf</b>`);
+}
+function renderDesign(o) {
+  const { cfg, r } = S.cur;
+  $('d_mode').textContent = pinned ? '(your selection)' : '(optimizer\'s best)';
+  fillSelect('d_sys', [['T1', 'CLT on girders'], ['T2', 'CLT on flush purlins'], ['T3', 'Purlins over dropped girders']], cfg.sys);
+  fillSelect('d_n', Array.from({ length: 11 }, (_, i) => [i + 2, `${i + 2} (at ${fmt(o.A / (i + 2), 1)} ft)`]), cfg.n || 2);
+  fillSelect('d_pi', CAT.panels.map((P, i) => [i, P.name]), cfg.pi);
+  fillSelect('d_ci', [['auto', 'Auto-size']].concat(COLS.map((c, i) => [i, sz(c[0], c[1])])), cfg.ci == null ? 'auto' : cfg.ci);
+  fillSelect('d_pw', PWS.map(w => [w, wl(w) + ' in.']), cfg.pw || PWS[1]);
+  fillSelect('d_pd', DEP.map(d => [d, dl(d) + ' in.']), cfg.pd || 24);
+  fillSelect('d_gw', GWS.map(w => [w, wl(w) + ' in.']), cfg.gw);
+  fillSelect('d_gd', DEP.map(d => [d, dl(d) + ' in.']), cfg.gd);
+  ['d_n', 'd_pw', 'd_pd'].forEach(id => $(id).disabled = cfg.sys === 'T1');
+  const st = statusOf(r);
+  $('d_result').innerHTML = `<div class="big"><span class="num">$${fmt(r.cpsf, 2)}</span><span class="unit">per sq ft</span><span class="chip ${st[0]}">${st[1]}</span></div>
+    <div class="kpis">
+      <div class="kpi"><b>${fmt(r.depth, 1)} in.</b><span>structural depth</span></div>
+      <div class="kpi"><b>${fmt(r.fn, 1)} Hz</b><span>floor frequency</span></div>
+      <div class="kpi"><b>${fmt(r.ap, 2)}% g</b><span>acceleration (limit ${fmt(o.alim, 1)})</span></div>
+      <div class="kpi"><b>${fmt(Math.max(r.pan.umax, r.pur ? r.pur.umax : 0, r.gir.umax, r.col.umax), 2)}</b><span>highest utilization</span></div>
+      <div class="kpi"><b>${fmt(r.ppk, 1)}</b><span>picks per 1,000 sq ft</span></div>
+      <div class="kpi"><b>${fmt(r.heavy[1] / 1000, 1)} kip</b><span>heaviest pick (${r.heavy[0]})</span></div>
+    </div><div class="hint" style="margin-top:8px">${esc(members(r))}. From ${esc(supplierText(r))}.</div>`;
+  $('d_costchart').innerHTML = costChart(r);
+  $('plan').innerHTML = planSvg(o, r);
+  $('q_unit').textContent = o.layout === 'corr' ? `per ${o.A} ft strip: ${2 * o.nb} bays plus corridor, one floor` : 'per typical bay, one floor';
+  $('t_str').innerHTML = strRows(r); $('t_vib').innerHTML = vibRows(r, o); $('t_qty').innerHTML = qtyRows(r, o); $('t_cost').innerHTML = costRows(r);
+  $('d_notes').innerHTML = considerations(o, r);
+  const d1 = stripDeflection(46, 15, 380e6), f1 = freqFromDefl(d1), l2 = cltSpanLimit(95e6, 0.45 * 62.4 * 4.125 / 12);
+  const ok1 = Math.abs(d1 - 0.138) < 0.0006 && Math.abs(f1 - 9.5) < 0.06, ok2 = Math.abs(l2 - 12.4) < 0.06;
+  const tag = ok => ok ? '<span class="ok">matches</span>' : '<span style="color:var(--bad);font-weight:600">differs</span>';
+  $('checks').innerHTML = `<div>Frequency example (46 psf, 15 ft, EI 380x10^6): this tool ${fmt(d1, 3)} in., ${fmt(f1, 1)} Hz; guide 0.138 in., 9.5 Hz ${tag(ok1)}</div>` +
+    `<div>CLT Handbook span limit example (4 1/8 in. panel, EI 95x10^6, 9.65 psf): this tool ${fmt(l2, 1)} ft; guide 12.4 ft ${tag(ok2)}</div>`;
+}
+function cfgFromEditor() {
+  const ci = $('d_ci').value;
+  return { sys: $('d_sys').value, n: +$('d_n').value, pi: +$('d_pi').value, pw: +$('d_pw').value, pd: +$('d_pd').value, gw: +$('d_gw').value, gd: +$('d_gd').value, ci: ci === 'auto' ? null : +ci };
+}
+
+/* ----- grid comparison ----- */
+function runGrid() {
+  const o = readInputs(), As = parseList($('lA').value), Bs = parseList($('lB').value);
+  if (!As.length || !Bs.length) { $('g_msg').textContent = 'Enter at least one A and one B between 8 and 60 ft.'; return; }
+  const t0 = performance.now(), cells = [];
+  As.forEach(A => Bs.forEach(B => { const o2 = Object.assign({}, o, { A, B }); cells.push({ A, B, best: rank(o2, study(o2))[0] || null }); }));
+  gridRes = { As, Bs, cells, key: JSON.stringify(o), obj: o.obj, ms: performance.now() - t0 };
+  renderGrid(); renderReport(o);
+}
+function gridHeat(g) {
+  const vals = g.cells.filter(c => c.best).map(c => OBJ[g.obj].v(c.best.r)), lo = Math.min(...vals), hi = Math.max(...vals);
+  const top = g.cells.filter(c => c.best).sort((a, b) => OBJ[g.obj].v(a.best.r) - OBJ[g.obj].v(b.best.r))[0];
+  let h = '<table class="heat"><tr><th>A \\ B</th>' + g.Bs.map(B => `<th>B = ${B} ft</th>`).join('') + '</tr>';
+  g.As.forEach(A => {
+    h += `<tr><th>A = ${A} ft</th>` + g.Bs.map(B => {
+      const c = g.cells.find(c => c.A === A && c.B === B);
+      if (!c.best) return '<td class="none">none</td>';
+      const r = c.best.r;
+      return `<td class="${c === top ? 'best' : ''}" style="background:${heatColorT(hi > lo ? (OBJ[g.obj].v(r) - lo) / (hi - lo) : 0)}" data-ga="${A}" data-gb="${B}" title="${esc(sysName(r.cfg) + ': ' + members(r))}">${OBJ[g.obj].f(r)}<br><small>${esc(sysShort(r.cfg))}, ${esc(r.P.name.split(' ').slice(0, 2).join(' '))}, ${fmt(r.depth, 0)} in., ${fmt(r.fn, 1)} Hz</small></td>`;
+    }).join('') + '</tr>';
+  });
+  return h + '</table>';
+}
+function gridBars(g) {
+  const list = g.cells.filter(c => c.best).sort((a, b) => a.best.r.cpsf - b.best.r.cpsf);
+  if (!list.length) return '<div class="hint">No grid has a passing design.</div>';
+  const max = Math.max(...list.map(c => c.best.r.cpsf)), W = 660, rh = 22, H = list.length * rh + 10, ml = 110, mr = 230;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Grids ranked by cost" style="width:100%;height:auto;font:11.5px system-ui,sans-serif">`;
+  list.forEach((c, i) => {
+    const r = c.best.r, y = 5 + i * rh, w = r.cpsf / max * (W - ml - mr);
+    s += `<text x="${ml - 8}" y="${y + 14}" text-anchor="end" fill="#1f2328">${c.A} x ${c.B} ft</text>`;
+    s += `<rect x="${ml}" y="${y + 3}" width="${w}" height="${rh - 7}" rx="3" fill="${sysColor(r.cfg)}" fill-opacity=".8" data-ga="${c.A}" data-gb="${c.B}" style="cursor:pointer"/>`;
+    s += `<text x="${ml + w + 6}" y="${y + 14}" fill="#6b7078">$${fmt(r.cpsf, 2)}/sf, ${fmt(r.depth, 0)} in. deep, ${fmt(r.fn, 1)} Hz, ${esc(sysShort(r.cfg))}</text>`;
+  });
+  return s + '</svg><div class="legend"><span><i style="background:var(--t1)"></i>CLT on girders</span><span><i style="background:var(--t2)"></i>Flush purlins</span><span><i style="background:var(--t3)"></i>Dropped girders</span></div>';
+}
+function renderGrid() {
+  if (!gridRes) { $('g_heat').innerHTML = '<div class="hint">Not run yet.</div>'; $('g_bars').innerHTML = ''; return; }
+  const stale = gridRes.key !== JSON.stringify(readInputs());
+  $('g_msg').textContent = `${gridRes.cells.length} grids in ${fmt(gridRes.ms / 1000, 1)} s.` + (stale ? ' Inputs have changed since this run; run again to update.' : '');
+  $('g_heat').innerHTML = gridHeat(gridRes); $('g_bars').innerHTML = gridBars(gridRes);
+}
+
+/* ----- runs ----- */
+function runsTable(withActions) {
+  if (!runs.length) return '<div class="hint">No runs yet.</div>';
+  return '<table class="t"><tr><th>Run</th><th>Grid</th><th class="l">Layout</th><th class="l">Members</th><th>$/sf</th><th>Depth, in.</th><th>Hz</th><th>% g</th><th>Max util.</th><th>Picks/1000 sf</th><th class="l">Supplier</th><th>Result</th>' + (withActions ? '<th></th>' : '') + '</tr>' +
+    runs.map((run, i) => {
+      const r = evalDesign(run.o, run.cfg), st = statusOf(r), um = Math.max(r.pan.umax, r.pur ? r.pur.umax : 0, r.gir.umax, r.col.umax);
+      return `<tr><td>${esc(run.label)}</td><td>${run.o.A} x ${run.o.B}</td><td class="l">${sysShort(run.cfg)}</td><td class="l">${esc(members(r))}</td><td>${fmt(r.cpsf, 2)}</td><td>${fmt(r.depth, 1)}</td><td>${fmt(r.fn, 1)}</td><td>${fmt(r.ap, 2)}</td><td>${fmt(um, 2)}</td><td>${fmt(r.ppk, 1)}</td><td class="l">${esc(r.pr.mc.name)}</td>` +
+        `<td><span class="chip ${st[0]}">${st[1]}</span></td>` +
+        (withActions ? `<td><button class="btn small" data-act="load-run" data-i="${i}">Load</button> <button class="btn small" data-act="del-run" data-i="${i}">Remove</button></td>` : '') + '</tr>';
+    }).join('') + '</table>';
+}
+function renderRuns() { $('runs').innerHTML = runsTable(true); }
+
+/* ----- catalog ----- */
+function renderCatalog() {
+  const n = (k, v, w) => `<input type="number" data-${k} value="${v}" step="any" style="width:${w || 80}px">`;
+  let h = '<h2>CLT panels</h2><div style="overflow-x:auto"><table class="t"><tr><th>Use' + info(CTIP.use) + '</th><th>Name</th><th>Grade' + info(CTIP.grade) + '</th><th>t, in.</th><th>Plies</th><th>EI_eff, 10^6 lbf-in^2/ft' + info(CTIP.EI) + '</th><th>FbS_eff, lbf-ft/ft' + info(CTIP.FbS) + '</th><th>GA_eff, 10^6 lbf/ft' + info(CTIP.GA) + '</th><th>Vs, lbf/ft' + info(CTIP.Vs) + '</th><th>Density, pcf' + info(CTIP.dens) + '</th><th>Price, $/cu ft' + info(CTIP.price) + '</th><th class="l">Source</th></tr>';
+  CAT.panels.forEach((P, i) => {
+    h += `<tr><td><input type="checkbox" data-p="${i}" data-f="on" ${P.on ? 'checked' : ''}></td><td><input type="text" data-p="${i}" data-f="name" value="${esc(P.name)}" style="width:130px"></td><td>${P.grade}</td>` +
+      ['t', 'pl', 'EI', 'FbS', 'GA', 'Vs', 'pcf', 'cost'].map(f => `<td>${n(`p="${i}" data-f="${f}"`, P[f], 74)}</td>`).join('') +
+      `<td class="l" style="white-space:normal;min-width:220px"><span class="tag ${P.real ? 'real' : 'ph'}">${P.real ? 'published' : 'placeholder'}</span> <span class="hint">${esc(P.src)}</span></td></tr>`;
+  });
+  h += '</table></div><div class="hint">CLT price default from the Beck Group Mass Timber Performance Index (about $42 to $44 per cu ft in 2023 and 2024, excluding freight). E1 premium is a placeholder.</div>';
+  const block = (title, tag, fields, key) => `<h2 style="margin-top:20px">${title} ${tag ? '<span class="tag ph">' + tag + '</span>' : ''}</h2><div class="four">` +
+    fields.map(([k, l, v]) => `<div><label>${l}${info(CTIP[k])}</label>${n(`${key}="${k}"`, v, 120)}</div>`).join('') + '</div>';
+  const g = CAT.gl, I = CAT.inst, C = CAT.conn, F = CAT.frt, L = CAT.logi;
+  h += block('Glulam', 'placeholder', [['E', 'E, 10^6 psi', g.E], ['Fb', 'Fb, psi', g.Fb], ['Fv', 'Fv, psi', g.Fv], ['Fc', 'Fc (columns), psi', g.Fc], ['Emin', 'Emin, 10^6 psi', g.Emin], ['pcf', 'Density, pcf', g.pcf], ['cost', 'Base price, $/cu ft (6 3/4 in. wide)', g.cost]], 'data-g');
+  h += '<div class="hint">Price rises with width: ' + Object.entries(CAT.glW).map(([w, f]) => `${wl(+w)} x${f}`).join(', ') + '. Wider members need wider, costlier lamstock (Beck Group MTPI 2025). Auto-sizing limits beam depth to 6 x width.</div>';
+  h += block('Erection', 'placeholder', [['crew', 'Crane and crew, $/hour', I.crew], ['pPanel', 'Panel picks per hour', I.pPanel], ['pBeam', 'Beam picks per hour', I.pBeam], ['pCol', 'Column picks per hour', I.pCol]], 'data-i');
+  h += '<div class="hint">$3,000 per hour erection cost cited for one project in a WoodWorks contractor presentation. A study of CLT floor installation measured a typical 78.5 m² (845 sq ft) per hour, about 2 to 3 panels per hour.</div>';
+  h += block('Connections, installed allowance', 'placeholder', [['pur', 'Per flush purlin end (hanger), $', C.pur], ['bear', 'Per purlin end bearing on a girder, $', C.bear], ['gir', 'Per girder end, $', C.gir], ['col', 'Per column (base, cap, splice), $', C.col]], 'data-c');
+  h += block('Freight and border', 'estimate', [['rate', 'Flatbed, $/mile (all in)', F.rate], ['payload', 'Payload per load, lb', F.payload], ['osPct', 'Oversize surcharge, %', F.osPct], ['fixed', 'Per load fixed, $', F.fixed], ['broker', 'Customs broker per load, $', F.broker], ['tarCAUS', 'Tariff, Canada to US, %', F.tarCAUS], ['tarUSCA', 'Tariff, US to Canada, %', F.tarUSCA]], 'data-r');
+  h += '<div class="hint">DAT flatbed spot linehaul ran about $2.60 to $2.90 per mile in fall 2026, before fuel. Tariff defaults assume CUSMA-compliant Canadian CLT and glulam (not on the August 2026 US tariff list) and Canada\'s 25% counter-tariff on US CLT and glulam. Both change often; confirm.</div>';
+  h += block('Panel logistics', '', [['panW', 'Panel width, ft', L.panW], ['panMax', 'Max panel length, ft', L.panMax]], 'data-l');
+  h += '<div class="actions" style="margin-top:16px"><button class="btn" data-act="reset-cat">Reset catalog to defaults</button></div>';
+  $('catalog').innerHTML = h;
+  $('mfrcat').innerHTML = '<h2>Manufacturers</h2><div style="overflow-x:auto"><table class="t"><tr><th>Use' + info(CTIP.muse) + '</th><th>Manufacturer</th><th>Plant</th><th>Country</th><th class="l">Makes</th><th>Max CLT w x L, ft' + info(CTIP.msize) + '</th><th>Grades' + info(CTIP.mgrade) + '</th><th>Price factor' + info(CTIP.pf) + '</th><th class="l">Notes</th></tr>' +
+    CAT.mfrs.map((m, i) => `<tr><td><input type="checkbox" data-m="${i}" data-f="on" ${m.on ? 'checked' : ''}></td><td>${esc(m.name)}</td><td>${esc(m.plant)}</td><td>${m.c}</td><td class="l">${[m.clt ? 'CLT' : '', m.gl ? 'glulam' : '', m.other || ''].filter(Boolean).join(', ')}</td>` +
+      `<td>${m.clt ? `${m.clt.w} x ${m.clt.L} ${m.clt.known ? '<span class="tag real">published</span>' : '<span class="tag ph">assumed</span>'}` : '-'}</td><td>${m.grades ? m.grades.join(', ') : 'not checked'}</td>` +
+      `<td><input type="number" data-m="${i}" data-f="pf" value="${m.pf}" step="0.05" style="width:70px"></td><td class="l" style="white-space:normal;min-width:240px"><span class="hint">${esc(m.src)}</span></td></tr>`).join('') +
+    '</table></div><div class="hint">Custom layups and grades come from each manufacturer\'s APA product report or ICC-ES report; not loaded yet. Glulam length assumed up to 60 ft everywhere. Price factor scales that plant\'s material prices.</div>';
+}
+function onCatChange(e) {
+  const el = e.target, d = el.dataset, val = el.type === 'checkbox' ? el.checked : el.type === 'number' ? +el.value : el.value;
+  if (el.type === 'number' && !(val > 0) && d.r !== 'tarCAUS' && d.r !== 'tarUSCA') return;
+  if (d.p != null) { CAT.panels[+d.p][d.f] = val; if (['EI', 'FbS', 'GA', 'Vs', 't', 'pl'].includes(d.f)) { CAT.panels[+d.p].real = false; renderCatalog(); } }
+  else if (d.m != null) CAT.mfrs[+d.m][d.f] = val;
+  else if (d.g) CAT.gl[d.g] = val; else if (d.i) CAT.inst[d.i] = val; else if (d.c) CAT.conn[d.c] = val; else if (d.r) CAT.frt[d.r] = val; else if (d.l) CAT.logi[d.l] = val;
+  fillSupplierSelect(); fillFixSelects(); render();
+}
+$('catalog').addEventListener('change', onCatChange); $('mfrcat').addEventListener('change', onCatChange);
+
+/* ----- report ----- */
+function renderReport(o) {
+  const name = esc($('rp_name').value || 'Untitled project'), by = esc($('rp_by').value);
+  const b = S.best, cur = S.cur.r, st = statusOf(cur);
+  const inputs =
+    row('Layout', o.layout === 'corr' ? `Double-loaded corridor, ${o.nb} bay${o.nb > 1 ? 's' : ''} each side, ${o.Wc} ft corridor` : 'One typical bay', '') +
+    row('Column spacing A x bay depth B', `${o.A} x ${o.B}`, 'ft') +
+    row('Design live / vibration live / superimposed dead', `${o.LLd} / ${o.LLv} / ${o.sdl}`, 'psf') +
+    row('Floors per column, story height, fire', `${o.stories}, ${fmt(o.H, 1)} ft, ${o.fire ? o.fire + ' hr' : 'none'}`, '') +
+    row('Max depth, crane limit, CLT appearance', `${o.maxD ? o.maxD + ' in.' : 'none'}, ${o.maxPick ? o.maxPick + ' kip' : 'none'}, ${o.appear > 1 ? 'architectural' : 'industrial'}`, '') +
+    row('Site, supplier rule', `${o.site}, ${o.sup === 'auto' ? 'cheapest delivered' : mfrLabel(CAT.mfrs[+o.sup])}`, '') +
+    row('Vibration targets', `${fmt(o.target, 1)} Hz, ${fmt(o.alim, 1)}% g, ${fmt(o.damp * 100, 1)}% damping`, '') + row('Optimized for', OBJ[o.obj].lab, '');
+  const sl = S.ranked.slice(0, 5);
+  const shortT = !sl.length ? '<p>No design passes every check.</p>' : '<table class="t"><tr><th>#</th><th class="l">Layout</th><th class="l">Members</th><th>$/sf</th><th>Depth</th><th>Hz</th></tr>' +
+    sl.map((p, k) => `<tr><td>${k + 1}</td><td class="l">${sysShort(p.cfg)}</td><td class="l">${esc(members(p.r))}</td><td>${fmt(p.r.cpsf, 2)}</td><td>${fmt(p.r.depth, 1)}</td><td>${fmt(p.r.fn, 1)}</td></tr>`).join('') + '</table>';
+  let sec = 0; const H2 = t => `<h2>${++sec}. ${t}</h2>`;
+  $('report').innerHTML = `<div class="report">
+    <h1>Mass timber floor system study</h1>
+    <div class="hint">${name}${by ? ' &middot; ' + by : ''} &middot; ${new Date().toLocaleDateString()}</div>
+    <p><span class="banner">Concept output. Simplified methods and placeholder values. Not for design or pricing.</span></p>
+    ${H2('Summary')}
+    <p style="margin:6px 0">${b ? `Best option (${OBJ[o.obj].lab.toLowerCase()}): <b>${esc(sysName(b.cfg))}</b>, ${esc(members(b.r))}, from ${esc(supplierText(b.r))}. About <b>$${fmt(b.r.cpsf, 2)} per sq ft</b> installed framing, <b>${fmt(b.r.depth, 1)} in.</b> structural depth, ${fmt(b.r.fn, 1)} Hz, ${fmt(b.r.ap, 2)}% g.` : 'No design passes every check.'}</p>
+    <p style="margin:6px 0">Design detailed below: ${esc(sysName(cur.cfg))}, ${esc(members(cur))}. Result: <b>${st[1]}</b>.</p>
+    ${H2('Design basis')}<table class="t">${inputs}</table>
+    ${H2('Where the cost goes')}${costChart(cur)}
+    ${H2('Plan')}${planSvg(o, cur)}
+    ${H2('Design considerations')}<ul class="notes">${considerations(o, cur)}</ul>
+    ${H2('Checks')}<div style="overflow-x:auto"><table class="t">${strRows(cur)}</table></div><table class="t" style="margin-top:8px">${vibRows(cur, o)}</table>
+    ${H2('Quantities and cost')}<table class="t">${qtyRows(cur, o)}</table><table class="t" style="margin-top:8px">${costRows(cur)}</table>
+    ${H2('Suppliers')}<div style="overflow-x:auto">${supplierRows(o, cur)}</div>
+    ${H2('Options considered')}<div style="overflow-x:auto">${heatHtml(o)}</div>${shortT}
+    ${gridRes ? H2('Grid comparison') + `<div style="overflow-x:auto">${gridHeat(gridRes)}</div>${gridBars(gridRes)}` : ''}
+    ${H2('Runs')}${runsTable(false)}
+    ${H2('Assumptions and limits')}
+    <ul>
+      <li>Floor frequency from the guide's simple-span estimate with Dunkerley's combination; reproduces the guide's worked examples. Acceleration uses the AISC DG 11 walking formula as a stand-in, not validated for timber.</li>
+      <li>Members simple span, uniform load; purlins hung flush from girders. Corridor CLT spans between the corridor girders. Exterior girders sized like interior ones.</li>
+      <li>E1 panel values published (APA PR-L332); V2 values derived. Glulam grades, fire, column and connection methods are simplified placeholders.</li>
+      <li>Costs: CLT from the Beck Group MTPI; glulam, erection, connection, freight and tariff values are editable estimates. No general conditions, design assist, shop drawings, temporary protection, sales tax or markup.</li>
+      <li>Supplier panel sizes marked assumed are not confirmed. Tariff status on cross-border timber has changed repeatedly in 2025 and 2026.</li>
+    </ul></div>`;
+  lastReportText = reportText(o, b, cur, st);
+}
+function reportText(o, b, cur, st) {
+  const L = [];
+  L.push('MASS TIMBER FLOOR SYSTEM STUDY (concept output, not for design or pricing)');
+  L.push(($('rp_name').value || 'Untitled project') + ($('rp_by').value ? ' - ' + $('rp_by').value : '') + ' - ' + new Date().toLocaleDateString(), '');
+  L.push(`${o.layout === 'corr' ? `Corridor building, ${o.nb} bay(s) each side, ${o.Wc} ft corridor` : 'Typical bay'}; A x B ${o.A} x ${o.B} ft; site ${o.site}`, '');
+  L.push(b ? `Best (${OBJ[o.obj].lab}): ${sysName(b.cfg)} - ${members(b.r)} - $${fmt(b.r.cpsf, 2)}/sf, ${fmt(b.r.depth, 1)} in., ${fmt(b.r.fn, 1)} Hz - ${supplierText(b.r)}` : 'No design passes every check.');
+  L.push(`Shown: ${sysName(cur.cfg)} - ${members(cur)} - ${st[1]}`, '', 'Cost breakdown ($/sf, share):');
+  Object.entries(cur.pr.parts).forEach(([k, v]) => L.push(`  ${k}: $${fmt(v / cur.q.area, 2)} (${fmt(v / cur.pr.total * 100, 0)}%)`));
+  L.push('', 'Top options:');
+  S.ranked.slice(0, 5).forEach((p, k) => L.push(`  ${k + 1}. ${sysShort(p.cfg)}: ${members(p.r)} - $${fmt(p.r.cpsf, 2)}/sf, ${fmt(p.r.depth, 1)} in.`));
+  if (gridRes) { L.push('', 'Grid comparison:'); gridRes.cells.filter(c => c.best).sort((a, c) => a.best.r.cpsf - c.best.r.cpsf).forEach(c => L.push(`  ${c.A} x ${c.B} ft: $${fmt(c.best.r.cpsf, 2)}/sf, ${fmt(c.best.r.depth, 0)} in., ${sysShort(c.best.cfg)}`)); }
+  L.push('', 'Runs:'); if (!runs.length) L.push('  none');
+  runs.forEach(run => { const q = evalDesign(run.o, run.cfg); L.push(`  ${run.label}: ${run.o.A} x ${run.o.B} ft, ${members(q)} - $${fmt(q.cpsf, 2)}/sf - ${statusOf(q)[1]}`); });
+  return L.join('\n');
+}
+
+/* ================= tooltips ================= */
+const TAB_TIPS = {
+  study: "Searches every allowed combination of panel, layout and member sizes for the grid in the sidebar and ranks the ones that pass. Start here.",
+  design: "Full checks, plan, quantities and cost for one design. Change any member to see the effect; your selection stays until you press 'Use the optimizer's best'.",
+  grid: "Repeats the study for several column spacings and bay depths to find the best grid. Most useful early, while the architect's grid is still open.",
+  runs: "Saved designs for side-by-side comparison. Each run keeps its own inputs, so you can compare across grids, loads or suppliers.",
+  catalog: "Every property, price, rate and manufacturer the tool uses. Orange tags are placeholders; replace them with project quotes.",
+  report: "Printable summary of the study and the design on the Design tab. Print to save a PDF, or copy as text for an email."
+};
+const TIPS = {
+  layout: "Double-loaded corridor prices a full strip A wide: bays on both sides plus the corridor, with a girder and column on every gridline. One typical bay prices a single interior bay.",
+  nb: "Bays between the corridor and the exterior wall on each side. Two bays deepen the floor plate without longer spans but add a gridline of girders and columns.",
+  Wc: "Gridline to gridline across the corridor. The corridor CLT spans this between the corridor girders. About 8 ft gives a 6 ft clear corridor.",
+  gA: "Held fixed in the study. Column spacing along the corridor; the girders span this, so it drives girder depth more than anything else. Typical 20 to 30 ft. Vary it on the Grid comparison tab.",
+  gB: "Held fixed in the study. Purlins, or the CLT when there are no purlins, span this from the corridor girder to the exterior girder. Residential 25 to 30 ft is common; offices often 30 ft or more.",
+  sysF: "CLT on girders: no purlins, shallowest, limited by CLT span. Flush purlins: purlins hang from the girders with tops level; depth is CLT + girder. Dropped girders: purlins sit on top of the girders; deeper overall, but simple bearing connections and MEP crosses the girder line through the gaps between purlins.",
+  fx_n: "Lock the number of purlins per bay, for example to match a window module or a planned duct spacing. Optimize tries every count that gives a 4 to 20 ft CLT span.",
+  fx_pi: "Lock the panel, for example when the fire assembly or supplier is already chosen.",
+  fx_pw: "Lock purlin width, for example to suit a hanger or a fire char allowance. Wider glulam costs more per cubic foot.",
+  fx_pd: "Lock purlin depth, for example to keep a uniform duct pocket. If the locked size fails a check, every design using it is reported as failing.",
+  fx_gw: "Lock girder width, for example to match the column width for a clean flush connection.",
+  fx_gd: "Lock girder depth, for example to fit a fixed ceiling height or match an existing building.",
+  fx_ci: "Lock the column size, for example to an architectural column module. Optimize picks the smallest size that passes.",
+  occ: "First number: design live load for strength and deflection. Second: the smaller live load actually present in service, which the guide uses for vibration.",
+  sdl: "Everything on or under the CLT besides the structure: topping, finishes, partitions, ceilings, MEP. A 1 1/2 in. concrete topping is about 18 psf. More mass lowers frequency but also lowers walking acceleration.",
+  stories: "Floors whose load reaches each column, including this one. Only affects column size.",
+  H: "Floor to floor height. Used for column length, buckling and cost.",
+  fire: "Required rating for exposed timber. Adds a char allowance to beams, columns and the CLT underside; 3-ply panels often fail at 1 hour or more.",
+  maxD: "Hard limit on depth below the top of the CLT, usually set by floor-to-floor height minus ceiling, MEP and finish zones. Deeper designs are rejected.",
+  maxPick: "Heaviest piece the planned crane can set at its farthest reach. Usually a long girder or a large panel governs.",
+  appear: "Architectural grade adds sanding and select faces. Use industrial where the ceiling will be covered.",
+  site: "Sets road distance to each plant and whether a delivery crosses the border.",
+  sup: "Cheapest delivered compares every plant that can make the design. Pick one plant to force it, for example a supplier already under contract.",
+  split: "Lets the optimizer buy glulam from a different plant than the CLT, for example a glulam specialist closer to the site.",
+  target: "Lower-bound floor frequency from the guide's simple method. A screening value, not a code limit; raising it pushes members deeper quickly. About 5 Hz is a reasonable start with the acceleration check also applied.",
+  alim: "Peak walking acceleration limit. 0.5% g is the usual office limit; 0.3% g for premium offices, labs or quiet residential.",
+  damp: "Damping ratio used in the acceleration estimate. Bare structure 1 to 2%; fitted-out office with ceilings and partitions 3 to 5%.",
+  obj: "What 'best' means among the designs that pass. Cost is usual; shallowest structure helps when floor-to-floor height is tight.",
+  lA: "Column spacings to try, separated by commas. Each value is combined with each B value.",
+  lB: "Bay depths to try. Enter one value to hold a fixed room depth while the column spacing varies.",
+  sc_y: "Second axis for the trade-off chart.",
+  d_sys: "Framing system for this one design. The optimizer's choice is shown until you change something.",
+  d_n: "Purlins per bay; sets the CLT span.", d_pi: "Panel for this design.", d_ci: "Auto picks the smallest column that passes.",
+  d_pw: "Purlin width.", d_pd: "Purlin depth.", d_gw: "Girder width.", d_gd: "Girder depth.",
+  rp_name: "Shown at the top of the report.", rp_by: "Shown at the top of the report."
+};
+const CTIP = {
+  use: "Untick to leave this panel out of the study.",
+  grade: "PRG 320 grade. E grades use machine-rated lumber in the major direction (stiffer, pricier); V grades use visually graded lumber.",
+  EI: "Effective bending stiffness per foot of width, major direction. Controls deflection and vibration. Take it from the manufacturer's product report.",
+  FbS: "Effective bending moment capacity per foot of width, ASD reference value.",
+  GA: "Effective shear stiffness per foot of width. Used to add shear deflection, which matters on short spans.",
+  Vs: "Rolling shear capacity per foot of width. Often governs short, heavily loaded spans.",
+  dens: "Used for self weight, pick weight and truck loads. Spruce-pine-fir is about 28 pcf; Douglas fir about 32 to 35 pcf.",
+  price: "Supply price per cubic foot before freight. Replace with a supplier budget price when you have one.",
+  E: "Glulam modulus of elasticity. 1.8 for 24F-1.8E beams.", Fb: "Glulam reference bending stress.", Fv: "Glulam reference shear stress.",
+  Fc: "Column compression parallel to grain.", Emin: "Stability modulus for column buckling.", pcf: "Glulam density for self weight and freight.",
+  cost: "Price per cubic foot for a 6 3/4 in. wide member. Other widths scale by the factors below.",
+  crew: "Crane, operator and erection crew together, per hour. Biggest single lever on installation cost.",
+  pPanel: "Floor panels set per crane hour. About 2 to 3 is typical for 8 to 10 ft wide panels.",
+  pBeam: "Purlins and girders set per crane hour, including bolting or screwing off.",
+  pCol: "Columns set per crane hour, including plumbing and base connection.",
+  pur: "Concealed or exposed hanger, screws and fabrication for one purlin end hung from a girder.",
+  bear: "Bearing clip or screws for one purlin end sitting on top of a girder. Usually far cheaper than a hanger.",
+  gir: "Girder-to-column connection, hardware plus fabrication, per end.",
+  col: "Column base, cap and splice hardware per column per floor.",
+  rate: "All-in flatbed rate per mile including fuel. Ask a carrier for a lane quote once the site is known.",
+  payload: "Usable payload per truck. Legal loads are usually 40,000 to 48,000 lb.",
+  osPct: "Extra cost for permits, escorts and routing when panels are wider than 8 1/2 ft or longer than 53 ft.",
+  fixed: "Per-load costs that do not scale with distance: loading, wait time, unloading.",
+  broker: "Customs broker and border paperwork per load, cross-border only.",
+  tarCAUS: "Tariff on Canadian CLT and glulam entering the US, as a percent of material value. Currently 0% for CUSMA-compliant product; confirm, it has changed often.",
+  tarUSCA: "Canadian counter-tariff on US CLT and glulam, as a percent of material value.",
+  panW: "Panel width used for piece counts and shipping. Over 8 1/2 ft ships oversize.",
+  panMax: "Longest panel you want to ship and set. Longer panels mean fewer picks but heavier picks and oversize loads.",
+  muse: "Untick to exclude this plant, for example if it is out of capacity for your schedule.",
+  msize: "Largest panel the plant can press. Green: published by the manufacturer. Orange: assumed, confirm before relying on it.",
+  mgrade: "Grades the plant is known to make. 'Not checked' means any grade is allowed.",
+  pf: "Multiplies this plant's material prices. Use it to reflect a quote, for example 0.95 for a 5% lower bid."
+};
+const tipEl = document.createElement('div'); tipEl.id = 'tip'; document.body.appendChild(tipEl);
+function placeTip(e) {
+  const w = tipEl.offsetWidth, h = tipEl.offsetHeight;
+  let x = e.clientX + 14, y = e.clientY + 18;
+  if (x + w > innerWidth - 8) x = innerWidth - w - 8;
+  if (y + h > innerHeight - 8) y = e.clientY - h - 12;
+  tipEl.style.left = x + 'px'; tipEl.style.top = y + 'px';
+}
+document.addEventListener('mouseover', e => {
+  const el = e.target.closest('.info[data-tip]');
+  if (!el || !el.dataset.tip) { tipEl.style.display = 'none'; return; }
+  tipEl.textContent = el.dataset.tip; tipEl.style.display = 'block'; placeTip(e);
+});
+document.addEventListener('mousemove', e => { if (tipEl.style.display === 'block') placeTip(e); });
+function info(t) { return t ? `<span class="info" data-tip="${esc(t)}">\u24D8</span>` : ''; }
+function applyTips() {
+  Object.entries(TIPS).forEach(([id, t]) => {
+    const el = $(id); if (!el) return;
+    const lb = document.querySelector(`label[for="${id}"]`);
+    if (lb) lb.insertAdjacentHTML('beforeend', info(t)); else el.insertAdjacentHTML('afterend', info(t));
+  });
+  document.querySelectorAll('.tab').forEach(b => b.insertAdjacentHTML('beforeend', info(TAB_TIPS[b.dataset.tab])));
+}
+
+/* ================= events ================= */
+function fillSupplierSelect() {
+  const cur = $('sup').value || 'auto';
+  $('sup').innerHTML = '<option value="auto">Cheapest delivered</option>' + CAT.mfrs.map((m, i) => m.on && m.clt ? `<option value="${i}">${esc(mfrLabel(m))}</option>` : '').join('');
+  $('sup').value = [...$('sup').options].some(op => op.value === cur) ? cur : 'auto';
+}
+$('site').innerHTML = Object.keys(SITES).map(k => `<option>${k}</option>`).join(''); $('site').value = 'Seattle, WA';
+fillSupplierSelect(); fillFixSelects();
+IDS.concat(['rp_name', 'rp_by']).forEach(id => $(id).addEventListener(['split'].includes(id) ? 'change' : 'input', render));
+$('sc_y').addEventListener('change', () => { $('scatter').innerHTML = scatterSvg(S.o); });
+['d_sys', 'd_n', 'd_pi', 'd_ci', 'd_pw', 'd_pd', 'd_gw', 'd_gd'].forEach(id => $(id).addEventListener('change', () => { pinned = cfgFromEditor(); render(); }));
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.tab === name));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('on', p.id === 'tab-' + name));
+}
+document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+let runNo = 0;
+document.addEventListener('click', e => {
+  const act = e.target.closest('[data-act]'), pick = e.target.closest('[data-pick]'), g = e.target.closest('[data-ga]');
+  if (act) {
+    const a = act.dataset.act, o = readInputs();
+    if (a === 'add-run') { runs.push({ label: 'Run ' + (++runNo), o, cfg: Object.assign({}, S.cur.cfg) }); showTab('runs'); }
+    else if (a === 'run-one') { runs.push({ label: 'Run ' + (++runNo), o, cfg: Object.assign({}, S.pts[+act.dataset.pick].cfg) }); showTab('runs'); }
+    else if (a === 'run-short') { S.ranked.slice(0, 5).forEach((p, k) => runs.push({ label: `Study ${o.A}x${o.B} #${k + 1}`, o, cfg: Object.assign({}, p.cfg) })); showTab('runs'); }
+    else if (a === 'clear-runs') runs.length = 0;
+    else if (a === 'del-run') runs.splice(+act.dataset.i, 1);
+    else if (a === 'load-run') { const run = runs[+act.dataset.i]; setInputs(run.o); pinned = Object.assign({}, run.cfg); showTab('design'); }
+    else if (a === 'use-best') pinned = null;
+    else if (a === 'grid') { $('g_msg').textContent = 'Running...'; setTimeout(runGrid, 20); return; }
+    else if (a === 'reset-cat') { CAT = defaultCatalog(); renderCatalog(); fillSupplierSelect(); fillFixSelects(); }
+    else if (a === 'print') { try { window.print(); } catch (err) { $('rp_msg').textContent = 'Printing is blocked here. Open the file in a browser and print from there.'; } return; }
+    else if (a === 'copy') {
+      const box = $('rp_box'); box.value = lastReportText; box.style.display = 'block';
+      try { navigator.clipboard.writeText(lastReportText).then(() => { $('rp_msg').textContent = 'Copied.'; }, () => { $('rp_msg').textContent = 'Copy blocked. Select the text below.'; }); }
+      catch (err) { $('rp_msg').textContent = 'Copy blocked. Select the text below.'; }
+      return;
+    }
+    render(); return;
+  }
+  if (pick) { pinned = Object.assign({}, S.pts[+pick.dataset.pick].cfg); render(); showTab('design'); return; }
+  if (g) { $('gA').value = g.dataset.ga; $('gB').value = g.dataset.gb; pinned = null; render(); showTab('study'); }
+});
+applyTips();
+renderCatalog();
+render();
+</script>
+</body>
+</html>
