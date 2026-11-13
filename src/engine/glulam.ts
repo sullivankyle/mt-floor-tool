@@ -79,6 +79,7 @@ export interface MemberResult {
   fire: { a: number; bf: number; df: number; M: number; cap: number; CL: number } | null; // in., in., in., lbf-in, lbf-in, -
   u: Util; umax: number; ok: boolean;
   sup: { D: number; L: number };   // load to the governing supporting line (unfactored, unreduced live), lbf
+  wD: number; wL: number; llf: number; lb: number | null; // inputs echoed for the calc package: plf, plf, -, in.
 }
 
 /** NDS 3.5.2: Kcr = 1.5 for glulam in dry service. */
@@ -153,5 +154,6 @@ export function memberCheck(basis: DesignBasis, cat: Catalog, o: BeamOpts): Memb
     } else { u.f = 9.99; fire = { a, bf, df, M: 0, cap: 0, CL: 0 }; }
   }
   const umax = Math.max(u.b, u.v, u.dl, u.dt, u.f, u.br);
-  return { b, d, L, spans, sw, T: D + Lr, M, V, Fbp, Fvp, CL, CV, Cb, gov, dL, dT, R, fire, u, umax, ok: umax <= 1, sup: supportLoad(spans, L, D, o.wL) };
+  return { b, d, L, spans, sw, T: D + Lr, M, V, Fbp, Fvp, CL, CV, Cb, gov, dL, dT, R, fire, u, umax, ok: umax <= 1, sup: supportLoad(spans, L, D, o.wL),
+    wD: o.wD, wL: o.wL, llf: o.llf, lb: o.bearing ? o.bearing.lb : null };
 }

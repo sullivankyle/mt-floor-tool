@@ -1,7 +1,7 @@
 # Assumptions, simplifications and placeholders
 
 One line per item, with the code location and the reference. Status: **S** simplification, **P** placeholder value, **B** known bug kept for now, **V** not verified against the source document.
-Current as of Phase 4 (vibration, the guide's methods). When an item is fixed, delete its line in the same commit.
+Current as of Phase 6 (data, project files, calc package). Phase 5 (connections) was skipped by choice: connections remain cost allowances with no capacity check. When an item is fixed, delete its line in the same commit.
 
 References: NDS 2018 and NDS Supplement 2018 (in `refs/`; the handoff named NDS 2024, but 2018 is the edition supplied), PRG 320-2019, ASCE 7-22 (not in `refs/`), WoodWorks *U.S. Mass Timber Floor Vibration Design Guide* (2023, "the guide"), AISC DG 11. APA PR-L332(C) in `refs/` is the Canadian (LSD/CSA O86) edition, so it is not used for U.S. values.
 
@@ -94,6 +94,11 @@ References: NDS 2018 and NDS Supplement 2018 (in `refs/`; the handoff named NDS 
 ## Optimizer
 - S: Discrete section lists; depths increase in 1.5 in. steps from a strength and stiffness estimate. This is a local search, not a global optimum, and widths are enumerated, not optimized (a bearing failure is fixed only by a wider combination). `engine/optimizer.ts:autosize`
 - S: Purlin counts searched from ceil(A/20) to floor(A/4), capped at 2 to 12. `engine/optimizer.ts:layouts`
+
+## Data, project files and report (Phase 6)
+- S: Manufacturer verified flags were set from what each source note records: press size = the concept's "known" flag; grades = a grade list was given; glulam = the note mentions glulam. Everything else is marked assumed. `data/manufacturers.json`
+- S: Project files hold the inputs, the whole edited catalog, runs, the pinned design and the report header. On opening, objects merge over the current defaults, lists (panels, manufacturers) replace, inputs added later take their defaults (with a warning), and an invalid manufacturer list is reset. `data/project.ts`
+- S: The calc package covers the design shown on the Design tab and lists the governing combination only, not every combination. `engine/calcpackage.ts`
 
 ## Known bugs kept from the concept
 - B: `fillFixSelects()` returns at once, so there are no member-lock controls; the `fx_*` tooltips are unused (Phase 6). `ui/main.ts:fillFixSelects`

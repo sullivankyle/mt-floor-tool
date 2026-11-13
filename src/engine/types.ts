@@ -59,6 +59,7 @@ export interface Manufacturer {
   pf: number;            // price factor on material (-)
   other?: string;
   src: string;
+  verified?: { cltSize: boolean; grades: boolean; glulam: boolean }; // true = from a published source; false = assumed
 }
 
 export type Site = [number, number, 'US' | 'CA']; // [lat deg, lon deg, country]

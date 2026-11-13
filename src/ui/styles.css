@@ -107,3 +107,12 @@ footer { max-width: 1320px; margin: 0 auto; padding: 0 24px 40px; color: var(--m
   .report { border: 0; padding: 0; }
   h2, svg, table { break-inside: avoid; }
 }
+
+table.t.calcpkg td { white-space: normal; vertical-align: top; font-size: 12px; }
+table.t.calcpkg td.mono { font: 11.5px ui-monospace, Menlo, monospace; color: #3b4048; }
+table.t.calcpkg td.name { min-width: 160px; }
+
+table.t.calcpkg td.mono { min-width: 220px; max-width: 360px; }
+table.t.calcpkg td:nth-child(3) { min-width: 180px; }
+table.t.calcpkg td:first-child { min-width: 110px; }
+

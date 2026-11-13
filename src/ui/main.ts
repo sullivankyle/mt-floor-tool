@@ -2,8 +2,9 @@
 // Typing and splitting this module is deferred to Phase 6 (UI polish).
 import './styles.css';
 import { defaultCatalog, DESIGN_DEFAULTS, PWS, GWS, DEP, COLS } from '../data/catalog';
+import { makeProject, readProject, validateMfrs, normalizeMfrs } from '../data/project';
 import { study, rank, evalDesign, priceWith, cltReason, glReason, miles, layouts, whyFail,
-         charDepth, stripDeflection, freqFromDefl, cltSpanLimit, OBJ_VALUE, G, combos, beamGrade, columnGrade, resolvePanels } from '../engine';
+         charDepth, stripDeflection, freqFromDefl, cltSpanLimit, OBJ_VALUE, G, calcPackage, combos, beamGrade, columnGrade, resolvePanels } from '../engine';
 
 let CAT = defaultCatalog();
 
@@ -537,11 +538,17 @@ function renderCatalog() {
   h += block('Panel logistics', '', [['panW', 'Panel width, ft', L.panW], ['panMax', 'Max panel length, ft', L.panMax]], 'l');
   h += '<div class="actions" style="margin-top:16px"><button class="btn" data-act="reset-cat">Reset catalog to defaults</button></div>';
   $('catalog').innerHTML = h;
-  $('mfrcat').innerHTML = '<h2>Manufacturers</h2><div style="overflow-x:auto"><table class="t"><tr><th>Use' + info(CTIP.muse) + '</th><th>Manufacturer</th><th>Plant</th><th>Country</th><th class="l">Makes</th><th>Max CLT w x L, ft' + info(CTIP.msize) + '</th><th>Grades' + info(CTIP.mgrade) + '</th><th>Price factor' + info(CTIP.pf) + '</th><th class="l">Notes</th></tr>' +
+  $('mfrcat').innerHTML = '<h2>Manufacturers</h2><div style="overflow-x:auto"><table class="t"><tr><th>Use' + info(CTIP.muse) + '</th><th>Manufacturer</th><th>Plant</th><th>Country</th><th class="l">Makes</th><th>Max CLT w x L, ft' + info(CTIP.msize) + '</th><th>Grades' + info(CTIP.mgrade) + '</th><th>Price factor' + info(CTIP.pf) + '</th><th class="l">Verified' + info(CTIP.mver) + '</th><th class="l">Notes</th></tr>' +
     CAT.mfrs.map((m, i) => `<tr><td><input type="checkbox" data-m="${i}" data-f="on" ${m.on ? 'checked' : ''}></td><td>${esc(m.name)}</td><td>${esc(m.plant)}</td><td>${m.c}</td><td class="l">${[m.clt ? 'CLT' : '', m.gl ? 'glulam' : '', m.other || ''].filter(Boolean).join(', ')}</td>` +
       `<td>${m.clt ? `${m.clt.w} x ${m.clt.L} ${m.clt.known ? '<span class="tag real">published</span>' : '<span class="tag ph">assumed</span>'}` : '-'}</td><td>${m.grades ? m.grades.join(', ') : 'not checked'}</td>` +
-      `<td><input type="number" data-m="${i}" data-f="pf" value="${m.pf}" step="0.05" style="width:70px"></td><td class="l" style="white-space:normal;min-width:240px"><span class="hint">${esc(m.src)}</span></td></tr>`).join('') +
-    '</table></div><div class="hint">Custom layups and grades come from each manufacturer\'s APA product report or ICC-ES report; not loaded yet. Glulam length assumed up to 60 ft everywhere. Price factor scales that plant\'s material prices.</div>';
+      `<td><input type="number" data-m="${i}" data-f="pf" value="${m.pf}" step="0.05" style="width:70px"></td>` +
+      `<td class="l">${[['cltSize', 'size'], ['grades', 'grades'], ['glulam', 'glulam']].map(([k2, t]) => `<span class="tag ${m.verified && m.verified[k2] ? 'real' : 'ph'}">${t}</span>`).join(' ')}</td>` +
+      `<td class="l" style="white-space:normal;min-width:240px"><span class="hint">${esc(m.src)}</span></td></tr>`).join('') +
+    '</table></div><div class="hint">Custom layups and grades come from each manufacturer\'s APA product report or ICC-ES report; not loaded yet. Glulam length assumed up to 60 ft everywhere. Price factor scales that plant\'s material prices. Green: from a published source; orange: assumed.</div>' +
+    '<div class="actions" style="margin-top:12px"><button class="btn" data-act="mfr-json">Edit manufacturers as JSON</button></div>' +
+    '<div id="mfr_json_box" style="display:none"><textarea id="mfr_json" class="copybox" style="height:280px" spellcheck="false"></textarea>' +
+    '<div class="actions" style="margin-top:6px"><button class="btn primary" data-act="mfr-json-apply">Apply</button><button class="btn" data-act="mfr-json-cancel">Cancel</button><span class="hint" id="mfr_json_msg" style="margin:0;color:var(--bad)"></span></div>' +
+    '<div class="hint">Fields: on, name, plant, ll [lat, lon], c ("US" or "CA"), clt (null or { w, L ft, t in., known }), gl, grades (null or a list), pf, other, src, verified { cltSize, grades, glulam }. Saved with the project file.</div></div>';
 }
 function onCatChange(e) {
   const el = e.target, d = el.dataset, val = el.type === 'checkbox' ? el.checked : el.type === 'number' ? +el.value : el.value;
@@ -604,8 +611,15 @@ function renderReport(o) {
       <li>Uniform loads; purlin reactions smeared along the girders. Corridor CLT priced but not checked. Exterior girders and columns sized like interior ones. Fire per NDS 2018 Chapter 16 (effective char, residual sections, Table 16.2.2) with connection protection screened only. See ASSUMPTIONS.md for the full list.</li>
       <li>Costs: CLT from the Beck Group MTPI; glulam, erection, connection, freight and tariff values are editable estimates. No general conditions, design assist, shop drawings, temporary protection, sales tax or markup.</li>
       <li>Supplier panel sizes marked assumed are not confirmed. Tariff status on cross-border timber has changed repeatedly in 2025 and 2026.</li>
-    </ul></div>`;
+    </ul>
+    ${H2('Appendix: calc package for the design shown')}
+    <div class="hint" style="margin-bottom:6px">${esc(sysName(cur.cfg))}: ${esc(members(cur))}. Every check with its equation, values and reference. Utilizations over 1.00 are shown in red.</div>
+    ${calcPkgHtml(o, cur)}</div>`;
   lastReportText = reportText(o, b, cur, st);
+}
+function calcPkgHtml(o, r) {
+  return calcPackage(o, CAT, r).map(s => `<h3 style="font-size:13px;margin:14px 0 4px">${esc(s.title)}</h3><div style="overflow-x:auto"><table class="t calcpkg"><tr><th class="l">Item</th><th class="l">Equation</th><th class="l">Values</th><th>Util.</th><th class="l">Reference</th></tr>` +
+    s.lines.map(l => `<tr><td class="l">${esc(l.item)}</td><td class="l mono">${esc(l.eq)}</td><td class="l">${esc(l.val)}</td>${l.u != null ? utilTd(l.u, false) : '<td>-</td>'}<td class="l name">${esc(l.ref)}</td></tr>`).join('') + '</table></div>').join('');
 }
 function reportText(o, b, cur, st) {
   const L = [];
@@ -718,6 +732,7 @@ const CTIP = {
   muse: "Untick to exclude this plant, for example if it is out of capacity for your schedule.",
   msize: "Largest panel the plant can press. Green: published by the manufacturer. Orange: assumed, confirm before relying on it.",
   mgrade: "Grades the plant is known to make. 'Not checked' means any grade is allowed.",
+  mver: "Which of this plant's data come from a published source (green) and which are assumed (orange): press size, grade list, glulam capability.",
   pf: "Multiplies this plant's material prices. Use it to reflect a quote, for example 0.95 for a 5% lower bid."
 };
 const tipEl = document.createElement('div'); tipEl.id = 'tip'; document.body.appendChild(tipEl);
@@ -774,6 +789,16 @@ document.addEventListener('click', e => {
     else if (a === 'use-best') pinned = null;
     else if (a === 'grid') { $('g_msg').textContent = 'Running...'; setTimeout(runGrid, 20); return; }
     else if (a === 'reset-cat') { CAT = defaultCatalog(); renderCatalog(); fillSupplierSelect(); fillFixSelects(); }
+    else if (a === 'save-proj') { saveProject(o); return; }
+    else if (a === 'open-proj') { $('proj_file').value = ''; $('proj_file').click(); return; }
+    else if (a === 'mfr-json') { const box = $('mfr_json'); box.value = JSON.stringify(CAT.mfrs, null, 1); $('mfr_json_box').style.display = 'block'; $('mfr_json_msg').textContent = ''; return; }
+    else if (a === 'mfr-json-cancel') { $('mfr_json_box').style.display = 'none'; return; }
+    else if (a === 'mfr-json-apply') {
+      let m; try { m = JSON.parse($('mfr_json').value); } catch (err) { $('mfr_json_msg').textContent = 'Not valid JSON: ' + err.message; return; }
+      const errs = validateMfrs(m);
+      if (errs.length) { $('mfr_json_msg').textContent = errs.slice(0, 6).join(' | ') + (errs.length > 6 ? ` (+${errs.length - 6} more)` : ''); return; }
+      CAT.mfrs = normalizeMfrs(m); renderCatalog(); fillSupplierSelect();
+    }
     else if (a === 'print') { try { window.print(); } catch (err) { $('rp_msg').textContent = 'Printing is blocked here. Open the file in a browser and print from there.'; } return; }
     else if (a === 'copy') {
       const box = $('rp_box'); box.value = lastReportText; box.style.display = 'block';
@@ -786,6 +811,27 @@ document.addEventListener('click', e => {
   if (pick) { pinned = Object.assign({}, S.pts[+pick.dataset.pick].cfg); render(); showTab('design'); return; }
   if (g) { $('gA').value = g.dataset.ga; $('gB').value = g.dataset.gb; pinned = null; render(); showTab('study'); }
 });
+/* ----- project files ----- */
+function saveProject(o) {
+  const name = $('rp_name').value.trim(), p = makeProject({ name, by: $('rp_by').value, inputs: o, catalog: CAT, runs, pinned });
+  const blob = new Blob([JSON.stringify(p, null, 1)], { type: 'application/json' }), a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = (name || 'mt-floor-project').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-') + '.json';
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  $('proj_msg').textContent = `Saved ${a.download}.`;
+}
+$('proj_file').addEventListener('change', async e => {
+  const file = e.target.files && e.target.files[0]; if (!file) return;
+  try {
+    const { project, warnings } = readProject(await file.text());
+    CAT = project.catalog; renderCatalog(); fillSupplierSelect();
+    setInputs(project.inputs);
+    runs.length = 0; project.runs.forEach(r => runs.push(r)); runNo = runs.length;
+    pinned = project.pinned; $('rp_name').value = project.name; $('rp_by').value = project.by;
+    render();
+    $('proj_msg').textContent = `Opened ${file.name}${project.saved ? ' (saved ' + new Date(project.saved).toLocaleString() + ')' : ''}.` + (warnings.length ? ' ' + warnings.join(' ') : '');
+  } catch (err) { $('proj_msg').textContent = 'Could not open: ' + err.message; }
+});
+
 applyTips();
 renderCatalog();
 render();

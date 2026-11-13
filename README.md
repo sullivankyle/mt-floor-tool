@@ -43,6 +43,12 @@ NDS 2018 Chapter 16 with ratings up to 2 hours. Effective char a_eff = 1.2 a_cha
 
 The WoodWorks guide's §4.3 modal response analysis: resonant peak acceleration (CCIP-016 harmonics, walking-frequency sweep, frequency weighting) and transient RMS velocity (effective impulse, 1/3-octave bands). The response calculations reproduce the guide's three worked examples from their published modal data. Modes for each design are estimated in closed form: orthotropic plate panel modes and a combined bay mode. They are not FEM results, so confirm a final design with a model (see `docs/handoff-fem.md`). Toppings and CLT-to-beam composite action follow §3.3.5 and §3.4. The AISC DG 11 walking formula remains available as an option.
 
+## Projects and report (Phase 6)
+
+- **Save project / Open project** (top of the page) writes and reads one JSON file with the inputs, every catalog edit, runs, the pinned design and the report header.
+- **Catalog tab:** manufacturer data shows a published (green) or assumed (orange) flag for press size, grades and glulam, and the whole list can be edited as JSON (validated before it is applied).
+- **Report:** ends with a calc package for the design shown: every check with its equation, values, utilization and code reference.
+
 ## Why TypeScript
 
 The engine passes many numbers that look alike (psf vs plf, in. vs ft, values in units of 10^6). Typed inputs and results, with units noted on every field, catch mix-ups while the code is restructured, at no runtime cost.
