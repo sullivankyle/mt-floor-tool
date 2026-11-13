@@ -1,0 +1,12 @@
+{
+  "_source": "U.S. Mass Timber Floor Vibration Design Guide (WoodWorks 2023): walker 3.6.2, stride 3.6.3, sweep step 4.3.1.1, topping 3.3.5",
+  "walker": { "P": 168, "stride": 2.5, "_units": "lbf, ft" },
+  "fwStep": 0.025,
+  "fwSpan": 0.6,
+  "kH": 0.25,
+  "_kH": "Orthotropic plate torsional term H = kH sqrt(Dx Dy); 0.25 reproduces the 9.84 Hz FEM frequency of guide Example 1 (placeholder calibration, one example)",
+  "toppings": {
+    "concrete": { "pcf": 145, "fc": 4000, "dyn": 1.35, "stiff": true, "src": "Normal-weight concrete; Ec = 57,000 sqrt(f'c) x 1.35 dynamic (guide 3.3.5)" },
+    "gypcrete": { "pcf": 115, "stiff": false, "src": "Mass only (guide 3.3.5); density placeholder" }
+  }
+}
