@@ -43,6 +43,16 @@ NDS 2018 Chapter 16 with ratings up to 2 hours. Effective char a_eff = 1.2 a_cha
 
 The WoodWorks guide's §4.3 modal response analysis: resonant peak acceleration (CCIP-016 harmonics, walking-frequency sweep, frequency weighting) and transient RMS velocity (effective impulse, 1/3-octave bands). The response calculations reproduce the guide's three worked examples from their published modal data. Modes for each design are estimated in closed form: orthotropic plate panel modes and a combined bay mode. They are not FEM results, so confirm a final design with a model (see `docs/handoff-fem.md`). Toppings and CLT-to-beam composite action follow §3.3.5 and §3.4. The AISC DG 11 walking formula remains available as an option.
 
+## FEM verification (vib-engine)
+
+The separate CalculiX engine (`../vib-engine`, see its `docs/integration.md`) checks a design by FEM. On the Design tab:
+
+1. **Export for FEM** saves `design-<sys>-<A>x<B>.json`.
+2. Run `python fem_engine/run.py design-....json results.json` in vib-engine (about a minute for a 3 x 3 bay patch).
+3. **Import FEM results** shows FEM next to this tool's method and the engine's hand check, with points, modes and engine warnings. Results are matched to the design on its inputs and marked stale if anything differs. Imported results are saved with the project file.
+
+A **verify with FEM** badge marks designs that the engine's validation found hand methods unreliable for (T1, light 3-ply T2, T3) and results within 20% of a limit.
+
 ## Projects and report (Phase 6)
 
 - **Save project / Open project** (top of the page) writes and reads one JSON file with the inputs, every catalog edit, runs, the pinned design and the report header.

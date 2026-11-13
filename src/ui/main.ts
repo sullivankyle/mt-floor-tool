@@ -2,6 +2,7 @@
 // Typing and splitting this module is deferred to Phase 6 (UI polish).
 import { defaultCatalog, DESIGN_DEFAULTS, PWS, GWS, DEP, COLS } from '../data/catalog';
 import { makeProject, readProject, validateMfrs, normalizeMfrs } from '../data/project';
+import { exportDesign, parseFemResults, femStale, needsFem } from '../data/fem';
 import { study, rank, evalDesign, priceWith, cltReason, glReason, miles, layouts, whyFail,
          charDepth, stripDeflection, freqFromDefl, cltSpanLimit, OBJ_VALUE, G, calcPackage, combos, beamGrade, columnGrade, resolvePanels } from '../engine';
 
@@ -295,7 +296,7 @@ function renderStudy(o) {
     $('bestbox').innerHTML = `<span class="chip bad">No design passes every check.</span><div class="hint">What governs: ${esc(why)}.</div>`;
   } else {
     const r = b.r;
-    $('bestbox').innerHTML = `<div class="big"><span class="num">$${fmt(r.cpsf, 2)}</span><span class="unit">per sq ft</span><span class="chip good">${esc(sysName(b.cfg))}</span></div>
+    $('bestbox').innerHTML = `<div class="big"><span class="num">$${fmt(r.cpsf, 2)}</span><span class="unit">per sq ft</span><span class="chip good">${esc(sysName(b.cfg))}</span>${femBadge(r, o)}</div>
       <div style="margin-top:6px">${esc(members(r))}</div><div class="hint">From ${esc(supplierText(r))}</div>
       <div class="kpis">
         <div class="kpi"><b>${fmt(r.depth, 1)} in.</b><span>structural depth</span></div>
@@ -419,7 +420,7 @@ function renderDesign(o) {
   fillSelect('d_gd', DEP.map(d => [d, dl(d) + ' in.']), cfg.gd);
   ['d_n', 'd_pw', 'd_pd'].forEach(id => $(id).disabled = cfg.sys === 'T1');
   const st = statusOf(r);
-  $('d_result').innerHTML = `<div class="big"><span class="num">$${fmt(r.cpsf, 2)}</span><span class="unit">per sq ft</span><span class="chip ${st[0]}">${st[1]}</span></div>
+  $('d_result').innerHTML = `<div class="big"><span class="num">$${fmt(r.cpsf, 2)}</span><span class="unit">per sq ft</span><span class="chip ${st[0]}">${st[1]}</span>${femBadge(r, o)}</div>
     <div class="kpis">
       <div class="kpi"><b>${fmt(r.depth, 1)} in.</b><span>structural depth</span></div>
       <div class="kpi"><b>${fmt(r.fn, 1)} Hz</b><span>floor frequency</span></div>
@@ -435,6 +436,7 @@ function renderDesign(o) {
   $('str_basis').textContent = `utilization = demand / capacity; ${o.method}, combinations ${combos(o.method).map(c => c.name).join(' and ')}; Kcr 1.5 glulam, 2.0 CLT`;
   $('t_vib').innerHTML = vibRows(r, o); $('t_qty').innerHTML = qtyRows(r, o); $('t_cost').innerHTML = costRows(r);
   $('d_notes').innerHTML = considerations(o, r);
+  $('fem_box').innerHTML = femHtml(o, r);
   const d1 = stripDeflection(46, 15, 380e6), f1 = freqFromDefl(d1), l2 = cltSpanLimit(95e6, 0.45 * 62.4 * 4.125 / 12);
   const ok1 = Math.abs(d1 - 0.138) < 0.0006 && Math.abs(f1 - 9.5) < 0.06, ok2 = Math.abs(l2 - 12.4) < 0.06;
   const tag = ok => ok ? '<span class="ok">matches</span>' : '<span style="color:var(--bad);font-weight:600">differs</span>';
@@ -616,6 +618,48 @@ function renderReport(o) {
     ${calcPkgHtml(o, cur)}</div>`;
   lastReportText = reportText(o, b, cur, st);
 }
+/* ----- FEM verification (vib-engine) ----- */
+let femRes = null;
+function vibRatio(r, o) {
+  const ev = r.vib.ev;
+  if (r.vib.method !== 'guide' || !ev) return r.ap / o.alim;
+  return Math.max(ev.res ? ev.apfwPct / o.alim : 0, ev.tr ? ev.vrms / o.vlim : 0);
+}
+function femBadge(r, o) {
+  const why = needsFem(r, vibRatio(r, o));
+  return why.length ? ` <span class="chip warn" title="${esc(why.join(' '))}">verify with FEM</span>` : '';
+}
+function femDesign(o, r) { return exportDesign(o, CAT, r, r.vib.fwMin, r.vib.fwMax); }
+function femHtml(o, r) {
+  const why = needsFem(r, vibRatio(r, o));
+  const flag = why.length ? `<ul class="notes" style="margin-bottom:8px">${why.map(w => `<li class="warn">${esc(w)}</li>`).join('')}</ul>` : '';
+  if (!femRes) return flag + '<div class="hint">Export this design, run <code>python fem_engine/run.py design.json results.json</code> in vib-engine (about a minute for a 3 x 3 bay patch), then import the results to compare. Findings above come from the engine\'s validation (VALIDATION.md sections 5 and 9).</div>';
+  const s = femRes.summary, hm = femRes.hand_method || {}, d = femDesign(o, r), stale = femStale(femRes, d), ev = r.vib.ev;
+  const f2 = x => x == null ? '-' : fmt(x, 2), f3 = x => x == null ? '-' : fmt(x, 3), f0 = x => x == null ? '-' : fmt(x, 0);
+  const femTr = s.governing_check === 'transient' || s.governing_check === 'both';
+  const femOk = s.ap_fw_pct_g <= o.alim && (!femTr || (s.vrms_fw_mips ?? 0) <= o.vlim);
+  const mine = o.vibMethod === 'guide' ? 'This tool: guide 4.3, closed-form modes' : 'This tool: DG 11 option';
+  let h = flag + `<div style="margin-bottom:8px"><span class="chip ${stale.length ? 'bad' : 'good'}">${stale.length ? 'stale: differs on ' + esc(stale.join(', ')) : 'matches this design'}</span>
+    <span class="hint" style="margin-left:8px">${esc(femRes.engine.name)} ${esc(femRes.engine.version || '')}${femRes.engine.solver ? ', ' + esc(femRes.engine.solver) : ''}${femRes.engine.runtime_s ? `, ${fmt(femRes.engine.runtime_s, 0)} s` : ''}</span></div>`;
+  h += '<div style="overflow-x:auto"><table class="t"><tr><th class="l">Quantity</th><th>' + esc(mine) + '</th><th>Engine hand check<br><span class="ref">DG 11 style: 65 lb, one mode, unweighted</span></th><th>FEM<br><span class="ref">CCIP-016: 168 lb, all modes, weighted</span></th><th class="l">Limit</th></tr>' +
+    `<tr><td class="l">Fundamental frequency, Hz</td><td>${f2(r.fn)}</td><td>${f2(hm.f_dunkerley)}</td><td><b>${f2(s.f1_Hz)}</b></td><td class="l">target ${fmt(o.target, 1)}</td></tr>` +
+    `<tr><td class="l">Peak acceleration, % g</td><td>${f3(r.ap)}</td><td>${f3(hm.ap_pct_g)}</td><td><b>${f3(s.ap_fw_pct_g)}</b>${s.fw_at_peak_Hz ? ` at ${f2(s.fw_at_peak_Hz)} Hz` : ''}</td><td class="l">${fmt(o.alim, 2)}</td></tr>` +
+    `<tr><td class="l">RMS velocity, mips</td><td>${r.vrms ? f0(r.vrms) : '-'}</td><td>-</td><td>${f0(s.vrms_fw_mips)}</td><td class="l">${f0(o.vlim)}</td></tr>` +
+    `<tr><td class="l">Response factor (accel. / vel.)</td><td>${ev ? `${f2(ev.Ra)} / ${ev.tr ? f2(ev.Rv) : '-'}` : '-'}</td><td>-</td><td>${f2(s.R_acc)} / ${f2(s.R_vel)}</td><td></td></tr>` +
+    `<tr><td class="l">Governing check</td><td>${ev ? esc(ev.regime) : 'acceleration'}</td><td>-</td><td>${esc(s.governing_check || '-')}</td><td></td></tr>` +
+    `<tr><td class="l">Passes the limits</td><td><span class="chip ${r.vibA ? 'good' : 'bad'}">${r.vibA ? 'yes' : 'no'}</span></td><td>-</td><td><span class="chip ${femOk ? 'good' : 'bad'}">${femOk ? 'yes' : 'no'}</span></td><td></td></tr>` +
+    `<tr><td class="l">Acceleration, this tool / FEM</td><td>${s.ap_fw_pct_g ? f2(r.ap / s.ap_fw_pct_g) : '-'}</td><td>${hm.ap_pct_g && s.ap_fw_pct_g ? f2(hm.ap_pct_g / s.ap_fw_pct_g) : '-'}</td><td>1.00</td><td></td></tr></table></div>`;
+  if (s.worst_point_in_bay_ft) h += `<div class="hint" style="margin-top:6px">Worst point in the centre bay: x = ${f2(s.worst_point_in_bay_ft[0])} ft along A (girder span), y = ${f2(s.worst_point_in_bay_ft[1])} ft along B, from the bay corner. This tool evaluates the bay centre only.</div>`;
+  const pts = femRes.points ? Object.entries(femRes.points) : [];
+  if (pts.length) h += '<h3 style="font-size:13px;margin:12px 0 4px">Points</h3><table class="t" style="width:auto"><tr><th class="l">Point</th><th>Peak accel., % g</th><th>RMS vel., mips</th></tr>' +
+    pts.map(([k, v]) => `<tr><td class="l">${esc(k)}</td><td>${f3(v.ap_fw_pct_g)}</td><td>${f0(v.vrms_fw_mips)}</td></tr>`).join('') + '</table>';
+  const modes = femRes.modes || [];
+  if (modes.length) h += `<h3 style="font-size:13px;margin:12px 0 4px">FEM modes <span class="ref">first ${Math.min(8, modes.length)} of ${modes.length}; this tool's bay mode: ${f2(r.fn)} Hz${r.vib.fm ? `, ${fmt(r.vib.fm.M1, 1)} lbf-s^2/in.` : ''}</span></h3><table class="t" style="width:auto"><tr><th>Mode</th><th>f, Hz</th><th>Modal mass, lbf-s^2/in.</th><th>phi at centre</th></tr>` +
+    modes.slice(0, 8).map(m => `<tr><td>${m.mode}</td><td>${f2(m.f_Hz)}</td><td>${fmt(m.modal_mass_lbf_s2_in, 1)}</td><td>${f3(m.phi_center)}</td></tr>`).join('') + '</table>';
+  const w = femRes.warnings || [];
+  h += `<h3 style="font-size:13px;margin:12px 0 4px">Engine warnings</h3>${w.length ? `<ul class="notes">${w.map(x => `<li class="warn">${esc(String(x))}</li>`).join('')}</ul>` : '<div class="hint">None.</div>'}`;
+  return h;
+}
 function calcPkgHtml(o, r) {
   return calcPackage(o, CAT, r).map(s => `<h3 style="font-size:13px;margin:14px 0 4px">${esc(s.title)}</h3><div style="overflow-x:auto"><table class="t calcpkg"><tr><th class="l">Item</th><th class="l">Equation</th><th class="l">Values</th><th>Util.</th><th class="l">Reference</th></tr>` +
     s.lines.map(l => `<tr><td class="l">${esc(l.item)}</td><td class="l mono">${esc(l.eq)}</td><td class="l">${esc(l.val)}</td>${l.u != null ? utilTd(l.u, false) : '<td>-</td>'}<td class="l name">${esc(l.ref)}</td></tr>`).join('') + '</table></div>').join('');
@@ -789,6 +833,13 @@ document.addEventListener('click', e => {
     else if (a === 'grid') { $('g_msg').textContent = 'Running...'; setTimeout(runGrid, 20); return; }
     else if (a === 'reset-cat') { CAT = defaultCatalog(); renderCatalog(); fillSupplierSelect(); fillFixSelects(); }
     else if (a === 'save-proj') { saveProject(o); return; }
+    else if (a === 'fem-export') {
+      const r = S.cur.r, d = femDesign(o, r);
+      downloadJson(d, `design-${r.cfg.sys}-${o.A}x${o.B}.json`);
+      $('fem_msg').textContent = `Exported. Run: python fem_engine/run.py design-${r.cfg.sys}-${o.A}x${o.B}.json results.json` + (d.source.notes.length ? ' Note: ' + d.source.notes.join(' ') : '');
+      return;
+    }
+    else if (a === 'fem-import') { $('fem_file').value = ''; $('fem_file').click(); return; }
     else if (a === 'open-proj') { $('proj_file').value = ''; $('proj_file').click(); return; }
     else if (a === 'mfr-json') { const box = $('mfr_json'); box.value = JSON.stringify(CAT.mfrs, null, 1); $('mfr_json_box').style.display = 'block'; $('mfr_json_msg').textContent = ''; return; }
     else if (a === 'mfr-json-cancel') { $('mfr_json_box').style.display = 'none'; return; }
@@ -811,13 +862,22 @@ document.addEventListener('click', e => {
   if (g) { $('gA').value = g.dataset.ga; $('gB').value = g.dataset.gb; pinned = null; render(); showTab('study'); }
 });
 /* ----- project files ----- */
-function saveProject(o) {
-  const name = $('rp_name').value.trim(), p = makeProject({ name, by: $('rp_by').value, inputs: o, catalog: CAT, runs, pinned });
-  const blob = new Blob([JSON.stringify(p, null, 1)], { type: 'application/json' }), a = document.createElement('a');
-  a.href = URL.createObjectURL(blob); a.download = (name || 'mt-floor-project').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-') + '.json';
+function downloadJson(obj, filename) {
+  const blob = new Blob([JSON.stringify(obj, null, 1)], { type: 'application/json' }), a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = filename;
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  $('proj_msg').textContent = `Saved ${a.download}.`;
 }
+function saveProject(o) {
+  const name = $('rp_name').value.trim(), p = makeProject({ name, by: $('rp_by').value, inputs: o, catalog: CAT, runs, pinned, fem: femRes });
+  const file = (name || 'mt-floor-project').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-') + '.json';
+  downloadJson(p, file);
+  $('proj_msg').textContent = `Saved ${file}.`;
+}
+$('fem_file').addEventListener('change', async e => {
+  const file = e.target.files && e.target.files[0]; if (!file) return;
+  try { femRes = parseFemResults(await file.text()); render(); $('fem_msg').textContent = `Imported ${file.name}.`; }
+  catch (err) { $('fem_msg').textContent = 'Could not import: ' + err.message; }
+});
 $('proj_file').addEventListener('change', async e => {
   const file = e.target.files && e.target.files[0]; if (!file) return;
   try {
@@ -826,6 +886,8 @@ $('proj_file').addEventListener('change', async e => {
     setInputs(project.inputs);
     runs.length = 0; project.runs.forEach(r => runs.push(r)); runNo = runs.length;
     pinned = project.pinned; $('rp_name').value = project.name; $('rp_by').value = project.by;
+    femRes = null;
+    if (project.fem) { try { femRes = parseFemResults(JSON.stringify(project.fem)); } catch (err) { warnings.push('Saved FEM results were unreadable and were dropped.'); } }
     render();
     $('proj_msg').textContent = `Opened ${file.name}${project.saved ? ' (saved ' + new Date(project.saved).toLocaleString() + ')' : ''}.` + (warnings.length ? ' ' + warnings.join(' ') : '');
   } catch (err) { $('proj_msg').textContent = 'Could not open: ' + err.message; }

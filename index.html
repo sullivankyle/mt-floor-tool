@@ -132,7 +132,7 @@
       <label for="vibMethod">Method</label>
       <select id="vibMethod"><option value="guide" selected>Mass timber guide 4.3 (modal response)</option><option value="dg11">AISC DG 11 walking formula</option></select>
       <div class="two">
-        <div><label for="fwMax">Fastest walking</label><select id="fwMax"><option value="1.6">1.6 Hz slow</option><option value="1.85">1.85 Hz moderate</option><option value="2.1" selected>2.1 Hz fast</option><option value="2.5">2.5 Hz corridor</option></select></div>
+        <div><label for="fwMax">Fastest walking</label><select id="fwMax"><option value="1.6">1.6 Hz slow</option><option value="1.85">1.85 Hz moderate</option><option value="2.1" selected>2.1 Hz fast</option><option value="2.2">2.2 Hz open office (FEM default)</option><option value="2.5">2.5 Hz corridor</option></select></div>
         <div><label for="vlim">RMS velocity limit</label><select id="vlim"><option value="4000">4,000 mips</option><option value="8000">8,000 mips</option><option value="16000" selected>16,000 mips</option><option value="32000">32,000 mips</option></select></div>
       </div>
       <label for="target">Minimum floor frequency</label>
@@ -257,6 +257,16 @@
         <table id="t_qty"></table>
         <h3>4. Cost <span class="ref">unit costs and rates from the Catalog tab</span></h3>
         <table id="t_cost"></table>
+      </div>
+      <div class="card">
+        <h2>FEM verification <span class="ref">separate CalculiX engine (vib-engine)</span></h2>
+        <div class="actions">
+          <button class="btn" data-act="fem-export">Export for FEM</button>
+          <button class="btn" data-act="fem-import">Import FEM results</button>
+          <input type="file" id="fem_file" accept=".json,application/json" style="display:none">
+          <span class="hint" id="fem_msg" style="margin:0"></span>
+        </div>
+        <div id="fem_box"></div>
       </div>
       <div class="card"><h2>Design considerations</h2><ul class="notes" id="d_notes"></ul></div>
       <div class="card check">

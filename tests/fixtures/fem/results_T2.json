@@ -1,0 +1,305 @@
+{
+ "engine": {
+  "name": "fem_engine",
+  "version": "0.3.0",
+  "solver": "CalculiX 2.23 (S8R shell, B32R members)",
+  "method": "Guide Section 4.3 (CCIP-016) modal superposition",
+  "runtime_s": 63.2
+ },
+ "input": {
+  "bays": [
+   3,
+   3
+  ],
+  "twist": "g16",
+  "panel_model": "esl",
+  "damp": 0.03,
+  "fw_range": [
+   1.6,
+   2.2
+  ],
+  "h": 24.0,
+  "sys": "T2",
+  "n": 3,
+  "pi": 1,
+  "pw": 6.75,
+  "pd": 21,
+  "gw": 10.75,
+  "gd": 30,
+  "A": 30,
+  "B": 25,
+  "LLv": 7,
+  "sdl": 25
+ },
+ "summary": {
+  "f1_Hz": 4.38,
+  "f1_centre_bay_Hz": 4.38,
+  "ap_fw_pct_g": 0.584,
+  "ap_pct_g": 0.621,
+  "fw_at_peak_Hz": 2.2,
+  "R_acc": 8.1,
+  "vrms_fw_mips": 25368.0,
+  "R_vel": 6.44,
+  "worst_point_in_bay_ft": [
+   24.38,
+   12.5
+  ],
+  "governing_check": "resonant",
+  "resonant_cutoff_Hz": 15.0
+ },
+ "points": {
+  "center": {
+   "ap_fw_pct_g": 0.516,
+   "vrms_fw_mips": 25368.0
+  },
+  "q1": {
+   "ap_fw_pct_g": 0.378,
+   "vrms_fw_mips": 11885.0
+  },
+  "q2": {
+   "ap_fw_pct_g": 0.376,
+   "vrms_fw_mips": 11794.0
+  },
+  "q3": {
+   "ap_fw_pct_g": 0.378,
+   "vrms_fw_mips": 11885.0
+  },
+  "q4": {
+   "ap_fw_pct_g": 0.376,
+   "vrms_fw_mips": 11794.0
+  }
+ },
+ "hand_method": {
+  "wE": 48.099,
+  "f_panel": 20.456,
+  "f_girder": 4.676,
+  "f_purlin": 5.088,
+  "f_dunkerley": 3.395,
+  "W_lbf": 64392.381,
+  "ap_g": 0.01,
+  "ap_pct_g": 1.025
+ },
+ "modes": [
+  {
+   "mode": 1,
+   "f_Hz": 4.379,
+   "modal_mass_lbf_s2_in": 179.799,
+   "phi_center": 0.7329,
+   "phi_q1": 0.4474,
+   "phi_q2": 0.4332,
+   "phi_q3": 0.4474,
+   "phi_q4": 0.4332
+  },
+  {
+   "mode": 2,
+   "f_Hz": 4.4384,
+   "modal_mass_lbf_s2_in": 172.343,
+   "phi_center": 0.0765,
+   "phi_q1": -0.0018,
+   "phi_q2": 0.0967,
+   "phi_q3": -0.0018,
+   "phi_q4": 0.0967
+  },
+  {
+   "mode": 3,
+   "f_Hz": 4.5787,
+   "modal_mass_lbf_s2_in": 101.706,
+   "phi_center": -0.0,
+   "phi_q1": 0.0104,
+   "phi_q2": -0.0163,
+   "phi_q3": -0.0104,
+   "phi_q4": 0.0163
+  },
+  {
+   "mode": 4,
+   "f_Hz": 4.588,
+   "modal_mass_lbf_s2_in": 104.467,
+   "phi_center": -0.0,
+   "phi_q1": 0.0078,
+   "phi_q2": -0.0025,
+   "phi_q3": -0.0078,
+   "phi_q4": 0.0025
+  },
+  {
+   "mode": 5,
+   "f_Hz": 4.6014,
+   "modal_mass_lbf_s2_in": 172.666,
+   "phi_center": -0.9629,
+   "phi_q1": -0.6601,
+   "phi_q2": -0.6532,
+   "phi_q3": -0.6601,
+   "phi_q4": -0.6532
+  },
+  {
+   "mode": 6,
+   "f_Hz": 4.6735,
+   "modal_mass_lbf_s2_in": 88.559,
+   "phi_center": -0.0,
+   "phi_q1": -0.1309,
+   "phi_q2": -0.1294,
+   "phi_q3": 0.1309,
+   "phi_q4": 0.1294
+  },
+  {
+   "mode": 7,
+   "f_Hz": 4.9134,
+   "modal_mass_lbf_s2_in": 127.022,
+   "phi_center": 1.0,
+   "phi_q1": 0.691,
+   "phi_q2": 0.693,
+   "phi_q3": 0.691,
+   "phi_q4": 0.693
+  },
+  {
+   "mode": 8,
+   "f_Hz": 4.9987,
+   "modal_mass_lbf_s2_in": 148.552,
+   "phi_center": -0.0179,
+   "phi_q1": -0.1986,
+   "phi_q2": 0.1736,
+   "phi_q3": -0.1986,
+   "phi_q4": 0.1736
+  },
+  {
+   "mode": 9,
+   "f_Hz": 5.2177,
+   "modal_mass_lbf_s2_in": 148.954,
+   "phi_center": 1.0,
+   "phi_q1": 0.5678,
+   "phi_q2": 0.5711,
+   "phi_q3": 0.5678,
+   "phi_q4": 0.5711
+  },
+  {
+   "mode": 10,
+   "f_Hz": 6.373,
+   "modal_mass_lbf_s2_in": 198.294,
+   "phi_center": -0.002,
+   "phi_q1": -0.5514,
+   "phi_q2": 0.5492,
+   "phi_q3": -0.5514,
+   "phi_q4": 0.5492
+  },
+  {
+   "mode": 11,
+   "f_Hz": 6.5708,
+   "modal_mass_lbf_s2_in": 130.828,
+   "phi_center": -0.0,
+   "phi_q1": 0.0118,
+   "phi_q2": -0.0164,
+   "phi_q3": -0.0118,
+   "phi_q4": 0.0164
+  },
+  {
+   "mode": 12,
+   "f_Hz": 6.9424,
+   "modal_mass_lbf_s2_in": 98.088,
+   "phi_center": -0.003,
+   "phi_q1": 0.534,
+   "phi_q2": -0.538,
+   "phi_q3": 0.534,
+   "phi_q4": -0.538
+  },
+  {
+   "mode": 13,
+   "f_Hz": 7.2289,
+   "modal_mass_lbf_s2_in": 135.916,
+   "phi_center": 0.5689,
+   "phi_q1": 0.1479,
+   "phi_q2": 0.1451,
+   "phi_q3": 0.1479,
+   "phi_q4": 0.1451
+  },
+  {
+   "mode": 14,
+   "f_Hz": 7.3428,
+   "modal_mass_lbf_s2_in": 102.263,
+   "phi_center": 0.0,
+   "phi_q1": 0.1128,
+   "phi_q2": 0.1133,
+   "phi_q3": -0.1128,
+   "phi_q4": -0.1133
+  },
+  {
+   "mode": 15,
+   "f_Hz": 7.647,
+   "modal_mass_lbf_s2_in": 82.071,
+   "phi_center": 0.3642,
+   "phi_q1": 0.0397,
+   "phi_q2": 0.045,
+   "phi_q3": 0.0397,
+   "phi_q4": 0.045
+  },
+  {
+   "mode": 16,
+   "f_Hz": 8.0575,
+   "modal_mass_lbf_s2_in": 206.909,
+   "phi_center": -0.0,
+   "phi_q1": 0.4484,
+   "phi_q2": 0.4468,
+   "phi_q3": -0.4484,
+   "phi_q4": -0.4468
+  },
+  {
+   "mode": 17,
+   "f_Hz": 8.2484,
+   "modal_mass_lbf_s2_in": 158.762,
+   "phi_center": -0.0,
+   "phi_q1": 0.0557,
+   "phi_q2": -0.0116,
+   "phi_q3": -0.0557,
+   "phi_q4": 0.0116
+  },
+  {
+   "mode": 18,
+   "f_Hz": 8.4404,
+   "modal_mass_lbf_s2_in": 85.027,
+   "phi_center": 0.0028,
+   "phi_q1": 0.4064,
+   "phi_q2": -0.4062,
+   "phi_q3": 0.4064,
+   "phi_q4": -0.4062
+  },
+  {
+   "mode": 19,
+   "f_Hz": 8.6157,
+   "modal_mass_lbf_s2_in": 94.114,
+   "phi_center": 0.0,
+   "phi_q1": 0.0216,
+   "phi_q2": -0.015,
+   "phi_q3": -0.0216,
+   "phi_q4": 0.015
+  },
+  {
+   "mode": 20,
+   "f_Hz": 8.7438,
+   "modal_mass_lbf_s2_in": 60.463,
+   "phi_center": -0.0025,
+   "phi_q1": 0.3849,
+   "phi_q2": -0.387,
+   "phi_q3": 0.3849,
+   "phi_q4": -0.387
+  }
+ ],
+ "derived": {
+  "wE_psf": 48.1,
+  "panel": "V2 5-ply 6 7/8",
+  "EI0": 362000000.0,
+  "EI90": 92859066.2,
+  "GA0": 920000.0,
+  "GA90": 749278.4,
+  "strong_dir": "x",
+  "bays": [
+   3,
+   3
+  ]
+ },
+ "warnings": [],
+ "units": {
+  "f": "Hz",
+  "accel": "% g (peak, frequency-weighted unless noted)",
+  "velocity": "micro-in/s RMS",
+  "modal_mass": "lbf-s^2/in, unity-normalised shapes",
+  "coordinates": "ft from the centre bay's (0, 0) corner"
+ }
+}

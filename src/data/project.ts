@@ -14,6 +14,7 @@ export interface Project {
   app: typeof PROJECT_APP; version: number; saved: string;
   name: string; by: string;
   inputs: Inputs; catalog: Catalog; runs: Run[]; pinned: Cfg | null;
+  fem?: unknown;   // last imported FEM engine results (data/fem.ts), kept as-is
 }
 
 export function makeProject(p: Omit<Project, 'app' | 'version' | 'saved'>, now = new Date()): Project {
@@ -83,6 +84,7 @@ export function readProject(text: string): { project: Project; warnings: string[
     app: PROJECT_APP, version: PROJECT_VERSION, saved: String(j.saved ?? ''),
     name: String(j.name ?? ''), by: String(j.by ?? ''),
     inputs: withDefaults(j.inputs as unknown as Inputs), catalog, runs, pinned: isObj(j.pinned) ? (j.pinned as unknown as Cfg) : null,
+    fem: isObj(j.fem) ? j.fem : undefined,
   };
   return { project, warnings };
 }
