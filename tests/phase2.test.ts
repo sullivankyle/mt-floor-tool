@@ -116,18 +116,18 @@ describe('ASD and LRFD', () => {
   });
   it('dead-only glulam beam: LRFD/ASD bending utilization = 1.4 x 0.9 / (2.54 x 0.85 x 0.6)', () => {
     const o = { b: 6.75, d: 24, L: 24, spans: 1 as const, wD: 500, wL: 0, llf: 1, brace: { kind: 'continuous' as const } };
-    const a = memberCheck({ method: 'ASD', fire: 0 }, cat, o), l = memberCheck({ method: 'LRFD', fire: 0 }, cat, o);
+    const a = memberCheck({ method: 'ASD', fire: 0, cltFallOff: true, colExp: 4 }, cat, o), l = memberCheck({ method: 'LRFD', fire: 0, cltFallOff: true, colExp: 4 }, cat, o);
     expect(l.u.b / a.u.b).toBeCloseTo(1.4 * 0.9 / (2.54 * 0.85 * 0.6), 9);
   });
   it('CLT rolling shear has no CD or lambda: LRFD capacity = 2.00 x 0.75 x Vs', () => {
     const P = cat.panels[4];
-    const r = panelCheck({ method: 'LRFD', fire: 0 }, P, 12, 1, 20, 50, 1);
+    const r = panelCheck({ method: 'LRFD', fire: 0, cltFallOff: true, colExp: 4 }, P, 12, 1, 20, 50, 1);
     expect(r.Vsp).toBeCloseTo(1.5 * P.Vs, 9);
   });
   it('CLT long-term deflection uses Kcr = 2.0', () => {
     const P = cat.panels[4], D = P.pcf * P.t / 12 + 25;
     const dD = analyzeSpans(1, 15, [D], P.EI * 1e6, P.GA * 1e6).defl;
-    const r = panelCheck({ method: 'ASD', fire: 0 }, P, 15, 1, 25, 50, 1);
+    const r = panelCheck({ method: 'ASD', fire: 0, cltFallOff: true, colExp: 4 }, P, 15, 1, 25, 50, 1);
     expect(r.dT).toBeCloseTo(2.0 * dD + r.dL, 9);
     expect(r.dL).toBeCloseTo(analyzeSpans(1, 15, [50], P.EI * 1e6, P.GA * 1e6).defl, 9);
   });

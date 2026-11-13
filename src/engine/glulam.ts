@@ -2,7 +2,7 @@
  * Glulam bending members (purlins, girders) per NDS 2018 Chapter 5 with Chapter 3 provisions.
  */
 import type { BeamGrade, Catalog, DesignBasis, Util } from './types';
-import { charDepth } from './fire';
+import { charDepth, reducedSection, FIRE } from './fire';
 import { combos, LRFD } from './loads';
 import { envelope, supportLoad } from './beam';
 
@@ -76,6 +76,7 @@ export interface MemberResult {
   gov: string;  // governing combination
   dL: number; dT: number; // in.
   R: number;    // governing factored reaction, lbf
+  fire: { a: number; bf: number; df: number; M: number; cap: number; CL: number } | null; // in., in., in., lbf-in, lbf-in, -
   u: Util; umax: number; ok: boolean;
   sup: { D: number; L: number };   // load to the governing supporting line (unfactored, unreduced live), lbf
 }
@@ -133,12 +134,24 @@ export function memberCheck(basis: DesignBasis, cat: Catalog, o: BeamOpts): Memb
   const dL = envelope(spans, L, 0, o.wL, E * I).defl, dD = envelope(spans, L, D, 0, E * I).defl;
   const dT = KCR_GLULAM * dD + dL;
   u.dl = dL / (L12 / 360); u.dt = dT / (L12 / 240);
+  // Fire, NDS 16.2: 3-sided exposure (CLT on top), a_eff per 16.2-4; Table 16.2.2: Fb x 2.85 x (lesser of CV on the
+  // original section, CL on the reduced section with FbE x 2.03); ASD D + L. No shear factor in Table 16.2.2.
   const a = charDepth(basis.fire);
-  if (a) {   // fire: ASD D + L on the 3-sided residual section (concept method, Phase 3 replaces)
+  let fire: MemberResult['fire'] = null;
+  if (a > 0) {
     const e = envelope(spans, L, D, Lr, E * I, Infinity, d, false);
-    const bf = b - 2 * a, df = d - a;
-    u.f = bf > 0 && df > 0 ? Math.max(e.Mpos * 12 / (bf * df * df / 6) / (2.85 * g.Fbp), 1.5 * e.Vd / (bf * df) / (2.75 * g.Fv)) : 9.99;
+    const { bf, df } = reducedSection(b, d, a, 3), EminF = FIRE.FbE * g.Exmin * 1e6;
+    if (bf > 0 && df > 0) {
+      const Sf = bf * df * df / 6;
+      const CLp = o.brace.kind === 'points' ? beamStability(o.brace.leFactor * o.brace.lu * 12, df, bf, FIRE.Fb * g.Fbp, EminF).CL : 1;
+      const capP = FIRE.Fb * g.Fbp * Math.min(CLp, CVp) * Sf;
+      let capN = Infinity, CLn = 1;
+      if (spans > 1) { CLn = beamStability(leGeneral(0.25 * L12, df), df, bf, FIRE.Fb * Fbn, EminF).CL; capN = FIRE.Fb * Fbn * Math.min(CLn, CVn) * Sf; }
+      const uP = capP > 0 ? e.Mpos * 12 / capP : 9.99, uN = spans > 1 ? (capN > 0 ? e.Mneg * 12 / capN : 9.99) : 0;
+      u.f = Math.max(uP, uN);
+      fire = uP >= uN ? { a, bf, df, M: e.Mpos * 12, cap: capP, CL: CLp } : { a, bf, df, M: e.Mneg * 12, cap: capN, CL: CLn };
+    } else { u.f = 9.99; fire = { a, bf, df, M: 0, cap: 0, CL: 0 }; }
   }
   const umax = Math.max(u.b, u.v, u.dl, u.dt, u.f, u.br);
-  return { b, d, L, spans, sw, T: D + Lr, M, V, Fbp, Fvp, CL, CV, Cb, gov, dL, dT, R, u, umax, ok: umax <= 1, sup: supportLoad(spans, L, D, o.wL) };
+  return { b, d, L, spans, sw, T: D + Lr, M, V, Fbp, Fvp, CL, CV, Cb, gov, dL, dT, R, fire, u, umax, ok: umax <= 1, sup: supportLoad(spans, L, D, o.wL) };
 }

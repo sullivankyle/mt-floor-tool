@@ -1,7 +1,7 @@
 /**
  * Design search (concept v7 port): layouts, auto-sizing of purlins and girders, ranking.
  */
-import type { Catalog, Cfg, Inputs, Objective } from './types';
+import { basisOf, type Catalog, type Cfg, type Inputs, type Objective } from './types';
 import { psfOf, panelCheck } from './clt';
 import { beamGrade } from './glulam';
 import { evalStructure } from './system';
@@ -63,11 +63,11 @@ export function study(o: Inputs, cat: Catalog): Point[] {
     layouts(o).forEach(l => {
       const Lp = l.sys !== 'T1' ? o.A / l.n : o.B;
       // quick screen: panel as simple span with no live load reduction is conservative for every continuity option
-      if (Lp > cat.logi.panMax || !panelCheck({ method: o.method, fire: o.fire }, P, Lp, 1, o.sdl, o.LLd, 1).ok) {
+      if (Lp > cat.logi.panMax || !panelCheck(basisOf(o), P, Lp, 1, o.sdl, o.LLd, 1, cat.lams[P.grade]).ok) {
         // re-check with the real continuity before rejecting
         const Lpan = Lp > cat.logi.panMax ? null : Math.max(Lp, Math.floor(cat.logi.panMax / Lp) * Lp);
         const n = o.panelCont === 'cont' && Lpan ? Math.min(3, Math.max(1, Math.round(Lpan / Lp))) : 1;
-        if (!Lpan || !panelCheck({ method: o.method, fire: o.fire }, P, Lp, n, o.sdl, o.LLd, 1).ok) { pts.push({ cfg: { sys: l.sys, n: l.n, pi } as Cfg, r: null }); return; }
+        if (!Lpan || !panelCheck(basisOf(o), P, Lp, n, o.sdl, o.LLd, 1, cat.lams[P.grade]).ok) { pts.push({ cfg: { sys: l.sys, n: l.n, pi } as Cfg, r: null }); return; }
       }
       const pws = l.sys === 'T1' ? [PWS[0]] : PWS.filter(w => o.fix.pw == null || w === o.fix.pw), gws = GWS.filter(w => o.fix.gw == null || w === o.fix.gw);
       pws.forEach(pw => gws.forEach(gw => { const a = autosize(o, cat, { sys: l.sys, n: l.n, pi, pw, gw }); if (a.r) pts.push(a); }));

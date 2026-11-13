@@ -46,7 +46,7 @@ function statusOf(r) {
 }
 function parseList(s) { return [...new Set(s.split(/[\s,;]+/).map(Number).filter(x => x >= 8 && x <= 60))].sort((a, b) => a - b); }
 
-const IDS = ['layout', 'nb', 'Wc', 'gA', 'gB', 'sysF', 'occ', 'sdl', 'stories', 'H', 'fire', 'maxD', 'maxPick', 'appear', 'site', 'sup', 'split', 'target', 'alim', 'damp', 'obj', 'method', 'panelCont', 'purlinCont', 'Ke', 'llr'];
+const IDS = ['layout', 'nb', 'Wc', 'gA', 'gB', 'sysF', 'occ', 'sdl', 'stories', 'H', 'fire', 'maxD', 'maxPick', 'appear', 'site', 'sup', 'split', 'target', 'alim', 'damp', 'obj', 'method', 'panelCont', 'purlinCont', 'Ke', 'llr', 'cltFallOff', 'colExp'];
 function readInputs() {
   const [LLd, LLv] = $('occ').value.split('|').map(Number);
   return {
@@ -57,6 +57,7 @@ function readInputs() {
     site: $('site').value, sup: $('sup').value, split: $('split').checked,
     target: +$('target').value, alim: +$('alim').value, damp: +$('damp').value / 100, obj: $('obj').value,
     method: $('method').value, panelCont: $('panelCont').value, purlinCont: $('purlinCont').value, Ke: +$('Ke').value, llr: $('llr').checked,
+    cltFallOff: $('cltFallOff').value === '1', colExp: +$('colExp').value,
     fix: { n: null, pi: null, pw: null, pd: null, gw: null, gd: null, ci: null }
   };
 }
@@ -68,6 +69,7 @@ function setInputs(o) {
   $('target').value = o.target; $('alim').value = String(o.alim); $('damp').value = o.damp * 100; $('obj').value = o.obj;
   const d = Object.assign({}, DESIGN_DEFAULTS, o);
   $('method').value = d.method; $('panelCont').value = d.panelCont; $('purlinCont').value = d.purlinCont; $('Ke').value = String(d.Ke); $('llr').checked = d.llr;
+  $('cltFallOff').value = d.cltFallOff ? '1' : '0'; $('colExp').value = String(d.colExp);
 }
 const FIX = ['n', 'pi', 'pw', 'pd', 'gw', 'gd', 'ci'];
 function fillFixSelects() { return;
@@ -223,7 +225,15 @@ function considerations(o, r) {
     if (!r.stack) add('warn', `Every branch leaves the corridor across the corridor-side girder (${dl(c.gd)} in. deep). Plan for penetrations, a drop, a shallower girder on that line, or a dropped-girder layout.`);
   }
   add(r.fn >= 15 ? 'ok' : r.vibF ? 'info' : 'bad', `Floor frequency ${fmt(r.fn, 1)} Hz (${r.fn < 3 ? 'below 3 Hz' : r.fn < 15 ? '3 to 15 Hz band, guide recommends a more detailed check' : 'above 15 Hz'}); estimated acceleration ${fmt(r.ap, 2)}% g.`);
-  add(o.fire ? 'info' : 'ok', o.fire ? `${o.fire} hour exposed timber: about ${fmt(charDepth(o.fire), 1)} in. of char allowed on beams and the panel underside. Connections need protection or concealment.` : 'No fire rating: exposed timber and connections with no char allowance.');
+  if (o.fire) {
+    const bad = r.conn.filter(x => !x.ok);
+    add(r.pan.u.f > 1 || r.gir.u.f > 1 || (r.pur && r.pur.u.f > 1) || r.col.u.f > 1 ? 'bad' : 'info',
+      `${o.fire} hour exposed timber (NDS 16.2): effective char ${fmt(charDepth(o.fire), 2)} in. on beams and columns, ${fmt(r.pan.fire.aeff, 2)} in. on the CLT soffit${o.cltFallOff ? ' with lamination fall-off' : ''}. Highest fire utilization ${fmt(Math.max(r.pan.u.f, r.gir.u.f, r.pur ? r.pur.u.f : 0, r.col.u.f), 2)}.`);
+    add(bad.length ? 'warn' : 'info', bad.length
+      ? `Connection protection (NDS 16.3): ${bad.map(x => esc(x.name.toLowerCase())).join(', ')} cannot be concealed in the wood as sized; protect with gypsum or use rated hardware, or widen the members.`
+      : `Connection protection (NDS 16.3): concealed connectors fit with ${fmt(charDepth(o.fire), 2)} in. wood cover; keep all steel and fastener tips that far inside exposed faces.`);
+    add('info', `Specify glulam beams for fire (NDS 16.2.4): substitute ${o.fire > 1 ? 'two outer tension laminations for two core laminations' : 'one outer tension lamination for a core lamination'} on the tension side (both sides for balanced layups).`);
+  } else add('ok', 'No fire rating: exposed timber and connections with no char allowance.');
   add(r.pickOk ? 'ok' : 'bad', `Heaviest pick ${fmt(r.heavy[1] / 1000, 1)} kip (${r.heavy[0]})${o.maxPick ? ` against a ${o.maxPick} kip crane limit` : ''}. ${fmt(r.ppk, 1)} picks per 1,000 sq ft, about ${fmt(r.pr.hours / r.q.area * 1000, 1)} crane hours per 1,000 sq ft.`);
   add(r.pr.oversize ? 'warn' : 'ok', r.pr.oversize ? `Panels ${CAT.logi.panW} ft wide${(r.Lpan || 0) > 53 ? ' and over 53 ft long' : ''} ship as oversize loads (permits, higher freight). Panels 8 ft wide or narrower avoid this but add picks.` : 'Panels ship as standard loads.');
   add('info', `Repetition: ${r.T2 ? 3 : 2} glulam member sizes per floor, panels ${CAT.logi.panW} x ${fmt(r.Lpan || 0, 1)} ft.`);
@@ -321,6 +331,21 @@ function strRows(r) {
   h += `<tr><td>Column</td><td>${sz(r.col.b, r.col.d)}, ${fmt(r.Pcol / 1000, 1)} kip service</td>${utilTd(r.col.u.n, r.col.u.n === r.col.umax)}<td>-</td><td>-</td><td>-</td>${utilTd(r.col.u.f, r.col.u.f === r.col.umax)}<td>-</td><td><span class="chip ${r.col.ok ? 'good' : 'bad'}">${r.col.ok ? 'ok' : 'fails'}</span></td></tr>`;
   return h;
 }
+function fireRows(r, o) {
+  if (!(o.fire > 0)) return '<tr><td class="name">No fire rating selected.</td></tr>';
+  const f1 = x => fmt(x, 1), f2 = x => fmt(x, 2);
+  let h = '<tr><th>Member</th><th class="l">Exposure</th><th>a_eff, in.</th><th class="l">Residual section</th><th>Demand</th><th>Capacity</th><th>Utilization</th></tr>';
+  const pf = r.pan.fire;
+  if (pf) h += `<tr><td>CLT panel</td><td class="l">soffit${o.cltFallOff ? ', lamination fall-off' : ''}</td><td>${f2(pf.aeff)}</td><td class="l">${pf.nlam} lamination${pf.nlam === 1 ? '' : 's'} lost; S ratio ${f2(r.pan.fr)}</td><td>${fmt(pf.M, 0)} lbf-ft/ft</td><td>${fmt(pf.cap, 0)} lbf-ft/ft</td>${utilTd(r.pan.u.f, false)}</tr>`;
+  const mem = (name, m) => m.fire ? `<tr><td>${name}</td><td class="l">3 sides</td><td>${f2(m.fire.a)}</td><td class="l">${f2(m.fire.bf)} x ${f2(m.fire.df)}, CL ${f2(m.fire.CL)}</td><td>${f1(m.fire.M / 12000)} kip-ft</td><td>${f1(m.fire.cap / 12000)} kip-ft</td>${utilTd(m.u.f, false)}</tr>` : '';
+  if (r.T2) h += mem('Purlin', r.pur);
+  h += mem('Girder', r.gir);
+  const cf = r.col.fire;
+  if (cf) h += `<tr><td>Column</td><td class="l">${o.colExp} sides</td><td>${f2(cf.a)}</td><td class="l">${f2(cf.bf)} x ${f2(cf.df)}</td><td>${f1(cf.P / 1000)} kip</td><td>${f1(cf.cap / 1000)} kip</td>${utilTd(r.col.u.f, false)}</tr>`;
+  h += '<tr><th>Connection</th><th class="l">Where</th><th>Cover, in.</th><th class="l" colspan="4">NDS 16.3 protection</th></tr>';
+  r.conn.forEach(c => { h += `<tr><td>${esc(c.name)}</td><td class="l">${esc(c.count)}</td><td>${f2(c.cover)}</td><td class="l" colspan="4"><span class="chip ${c.ok ? 'good' : 'warn'}">${c.ok ? 'ok' : 'protect'}</span> ${esc(c.note)}</td></tr>`; });
+  return h;
+}
 function facRows(r, o) {
   const g = beamGrade(CAT), cg = columnGrade(CAT), f2 = x => fmt(x, 2), f0 = x => fmt(x, 0);
   let h = '<tr><th>Member</th><th class="l">Grade</th><th class="l">Governs</th><th>Live red.</th><th>CL</th><th>CV</th><th>Cb / CP</th><th>Fb\' or FbS\'</th><th>Fv\' or Vs\'</th><th class="l">Demand</th></tr>';
@@ -383,7 +408,7 @@ function renderDesign(o) {
   $('d_costchart').innerHTML = costChart(r);
   $('plan').innerHTML = planSvg(o, r);
   $('q_unit').textContent = o.layout === 'corr' ? `per ${o.A} ft strip: ${2 * o.nb} bays plus corridor, one floor` : 'per typical bay, one floor';
-  $('t_str').innerHTML = strRows(r); $('t_fac').innerHTML = facRows(r, o);
+  $('t_str').innerHTML = strRows(r); $('t_fac').innerHTML = facRows(r, o); $('t_fire').innerHTML = fireRows(r, o);
   $('str_basis').textContent = `utilization = demand / capacity; ${o.method}, combinations ${combos(o.method).map(c => c.name).join(' and ')}; Kcr 1.5 glulam, 2.0 CLT`;
   $('t_vib').innerHTML = vibRows(r, o); $('t_qty').innerHTML = qtyRows(r, o); $('t_cost').innerHTML = costRows(r);
   $('d_notes').innerHTML = considerations(o, r);
@@ -553,7 +578,7 @@ function renderReport(o) {
     <ul>
       <li>Members designed to NDS 2018 (${o.method}) with ASCE 7-22 gravity combinations and ${o.llr ? 'live load reduction per §4.7' : 'no live load reduction'}. CLT properties from the layup per PRG 320-2019 Appendix X3; glulam from NDS Supplement Tables 5A and 5B.</li>
       <li>Floor frequency from the guide's simple-span estimate with Dunkerley's combination; reproduces the guide's worked examples. Acceleration uses the AISC DG 11 walking formula as a stand-in, not validated for timber.</li>
-      <li>Uniform loads; purlin reactions smeared along the girders. Corridor CLT priced but not checked. Exterior girders and columns sized like interior ones. Fire and connections use simplified methods. See ASSUMPTIONS.md for the full list.</li>
+      <li>Uniform loads; purlin reactions smeared along the girders. Corridor CLT priced but not checked. Exterior girders and columns sized like interior ones. Fire per NDS 2018 Chapter 16 (effective char, residual sections, Table 16.2.2) with connection protection screened only. See ASSUMPTIONS.md for the full list.</li>
       <li>Costs: CLT from the Beck Group MTPI; glulam, erection, connection, freight and tariff values are editable estimates. No general conditions, design assist, shop drawings, temporary protection, sales tax or markup.</li>
       <li>Supplier panel sizes marked assumed are not confirmed. Tariff status on cross-border timber has changed repeatedly in 2025 and 2026.</li>
     </ul></div>`;
@@ -624,6 +649,8 @@ const TIPS = {
   panelCont: "Continuous designs each panel over the supports it is shipped across (up to 3 spans analysed), with live load placed on the worst spans. Interior supports then carry more load (1.25 x for two spans), which the purlins or girders below pick up.",
   purlinCont: "With two bays each side of the corridor, purlins sitting on dropped girders can run continuous over the middle girder. Lowers purlin moment and deflection, but the middle girder carries 1.25 x the load. Only applies to the dropped-girder system.",
   Ke: "Effective length factor for column buckling (NDS Appendix G). 1.0 for columns pinned at each floor, the usual assumption.",
+  cltFallOff: "Lamination fall-off: each charred lamination falls away at the glue line and charring restarts on the next one (NDS eq. 16.2-3, Table 16.2.1B). Choose no fall-off only for CLT with adhesives qualified to PRG 320 Annex B; then the solid-wood char rate applies.",
+  colExp: "Faces of the columns exposed to fire. 3 sides for columns built into a wall; 4 for free-standing columns.",
   llr: "Reduces design live load on members with large tributary areas (ASCE 7-22 4.7): columns use KLL = 4 and all floors above, beams KLL = 2. Not applied to 100 psf assembly loads. Deflections use the unreduced live load."
 };
 const CTIP = {

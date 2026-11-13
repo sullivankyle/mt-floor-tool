@@ -71,6 +71,7 @@ export interface Catalog {
   conn: { pur: number; bear: number; gir: number; col: number };                 // $ each
   frt: { rate: number; payload: number; osPct: number; fixed: number; broker: number; tarCAUS: number; tarUSCA: number }; // $/mi, lb, %, $/load, $/load, %, %
   logi: { panW: number; panMax: number };                                        // ft, ft
+  connGeom: { concealedW: number; src?: string; verified?: boolean };            // concealed connector width, in.
   mfrs: Manufacturer[];
   sites: Record<string, Site>;
 }
@@ -109,6 +110,8 @@ export interface Inputs {
   purlinCont: 'simple' | 'two';   // T3 purlins two-span over the middle girder (needs 2 bays each side)
   llr: boolean;      // ASCE 7-22 §4.7 live load reduction
   Ke: number;        // column effective length factor (-), NDS Appendix G
+  cltFallOff: boolean; // CLT char model with lamination fall-off (NDS 16.2-3)
+  colExp: 3 | 4;     // column faces exposed to fire
   fix: Fix;
 }
 
@@ -131,4 +134,12 @@ export interface Cfg {
 export interface Util { b: number; v: number; dl: number; dt: number; f: number; br: number }
 
 /** Inputs that member checks need besides geometry: design method and fire. */
-export interface DesignBasis { method: Method; fire: number }
+export interface DesignBasis {
+  method: Method;
+  fire: number;          // required fire resistance, hours (0 to 2)
+  cltFallOff: boolean;   // CLT char with lamination fall-off (NDS eq. 16.2-3) or without (16.2-2)
+  colExp: 3 | 4;         // column faces exposed to fire
+}
+
+export const basisOf = (o: Inputs): DesignBasis =>
+  ({ method: o.method, fire: o.fire, cltFallOff: o.cltFallOff !== false, colExp: o.colExp === 3 ? 3 : 4 });

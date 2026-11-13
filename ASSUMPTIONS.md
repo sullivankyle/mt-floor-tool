@@ -1,7 +1,7 @@
 # Assumptions, simplifications and placeholders
 
 One line per item, with the code location and the reference. Status: **S** simplification, **P** placeholder value, **B** known bug kept for now, **V** not verified against the source document.
-Current as of Phase 2 (NDS member design). When an item is fixed, delete its line in the same commit.
+Current as of Phase 3 (fire, NDS Chapter 16). When an item is fixed, delete its line in the same commit.
 
 References: NDS 2018 and NDS Supplement 2018 (in `refs/`; the handoff named NDS 2024, but 2018 is the edition supplied), PRG 320-2019, ASCE 7-22 (not in `refs/`), WoodWorks *U.S. Mass Timber Floor Vibration Design Guide* (2023, "the guide"), AISC DG 11. APA PR-L332(C) in `refs/` is the Canadian (LSD/CSA O86) edition, so it is not used for U.S. values.
 
@@ -47,11 +47,17 @@ References: NDS 2018 and NDS Supplement 2018 (in `refs/`; the handoff named NDS 
 - S: One combination for all columns (default DF #2, 4+ laminations); axial load only; Le = Ke x story height with Ke from input (default 1.0); le/d <= 50. `engine/columns.ts`
 - S: The smallest passing size from a fixed list is picked, for the most heavily loaded (lowest) floor; no splices or size changes up the building. `engine/system.ts`, `data/sections.json`
 
-## Fire (concept method; Phase 3 replaces)
-- S: Effective char 1.2 x 1.5 in./hr x t^0.813 (NDS 16.2.1, beta_n = 1.5 in./hr). `engine/fire.ts:charDepth`
-- S: Beams charred on 3 sides, columns on 4 sides, CLT from the underside only, major plies only, no lamination fall-off. `engine/fire.ts:cltFireRatio`
-- S: Fire factors 2.85 (bending), 2.75 (shear), 2.58 (compression), 2.03 (Emin) after NDS Table 16.2.2; no CL or CV in fire; negative moment regions not checked for fire. `engine/glulam.ts`, `engine/columns.ts`, `engine/clt.ts`
-- S: Connection protection is only a note. `ui/main.ts:considerations`
+## Fire (NDS 2018 Chapter 16)
+- S: Nominal char rate beta_n = 1.5 in./hr for glulam and CLT (16.2.1.1); a_char = beta_n t^0.813, a_eff = 1.2 a_char (16.2-2, 16.2-4). The 1.2 factor stands in for a separate zero-strength layer. `engine/fire.ts:charDepth`
+- S: CLT char with lamination fall-off per eq. 16.2-3, applied lamination by lamination (so unequal layups are allowed); the no-fall-off option uses 16.2-2. Tests reproduce Table 16.2.1B within 0.052 in. (the table rounds inconsistently). `engine/fire.ts:cltCharDepth`
+- S: CLT residual section (16.2.1.5) from the actual layup with the PRG 320 X3 assumptions (transverse E/30), E-weighted neutral axis, extreme major fibre; capacity = 2.85 x FbS x (residual / original Seff), so the 0.85 in FbS carries through and product-report overrides scale. `engine/fire.ts:cltFireRatio`, `engine/clt.ts:panelCheck`
+- S: Beams exposed on 3 sides (CLT on top). Columns on 4 sides, or 3 by input with one depth face protected; column slenderness on the smaller reduced dimension. `engine/fire.ts:reducedSection`, `engine/columns.ts`
+- S: Table 16.2.2: bending 2.85 Fb x lesser of CV (original section) and CL (reduced section, FbE x 2.03); compression 2.58 Fc x CP (FcE x 2.03). Table 16.2.2 has no shear factor, so shear isn't checked in fire (the concept used 2.75 Fv). `engine/glulam.ts`, `engine/columns.ts`
+- S: Load for fire = ASD D + L with the member's live load reduction, in both ASD and LRFD mode. `engine/clt.ts`, `engine/glulam.ts`, `engine/columns.ts`
+- S: Continuous members are checked in fire for both moment signs on the same reduced section; CLT negative moment uses the smaller extreme-fibre section modulus. `engine/glulam.ts`, `engine/clt.ts`
+- S: Fire only checks strength; thermal separation (burn-through) and gypsum or topping protection credits are not modelled. `engine/fire.ts`
+- S: NDS 16.2.4 glulam fire layups are a specification note only. `ui/main.ts:considerations`
+- P: Connection protection (16.3) is screened by geometry: a concealed connector 1.5 in. wide (placeholder) needs a member width >= 1.5 + 2 a_eff; other connections get cover notes only. `engine/fire.ts:connectionProtection`, `data/connections.json`
 
 ## Vibration (concept method; Phase 4 replaces)
 - S: Frequency of each component from its own simple-span deflection, f = 0.18 sqrt(g/delta), combined by Dunkerley (guide §4.2.1). Continuity is not credited. `engine/vibration.ts`

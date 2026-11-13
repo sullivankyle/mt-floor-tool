@@ -2,7 +2,7 @@
  * Glulam columns per NDS 2018 3.7 and Chapter 5, axial load only.
  */
 import type { Catalog, ColumnGrade, DesignBasis } from './types';
-import { charDepth } from './fire';
+import { charDepth, reducedSection, FIRE } from './fire';
 import { combos, LRFD } from './loads';
 
 export function columnGrade(cat: Catalog): ColumnGrade {
@@ -34,13 +34,14 @@ export interface ColumnResult {
   cap: number;    // capacity for the governing combination, lbf
   capF: number;   // fire capacity, lbf
   CP: number; leOverD: number; gov: string;
+  fire: { a: number; bf: number; df: number; P: number; cap: number } | null; // in., in., in., lbf, lbf
   u: { n: number; f: number }; umax: number; ok: boolean;
 }
 
 /**
  * Column check, Le = Ke H (NDS 3.7.1.2), le/d <= 50 (3.7.1.4).
  *  Fc' = Fc CD CM Ct CP (ASD) or Fc KF 2.40 phi 0.90 lambda CP (LRFD); Emin' = Emin (LRFD x 1.76 x 0.85).
- *  Fire: 4-sided char, 2.58 Fc and 2.03 Emin (NDS Table 16.2.2), ASD D + L.
+ *  Fire: see below (NDS 16.2).
  * @param b, d in.; @param PD dead load, lbf; @param PL live load after reduction, lbf; @param H story height, ft; @param Ke (-)
  */
 export function columnCheck(basis: DesignBasis, cat: Catalog, b: number, d: number, PD: number, PL: number, H: number, Ke: number): ColumnResult {
@@ -54,8 +55,15 @@ export function columnCheck(basis: DesignBasis, cat: Catalog, b: number, d: numb
     const cp_ = cp * Fcs * b * d, p = c.cD * PD + c.cL * PL, uu = cp_ > 0 ? p / cp_ : 9.99;
     if (uu > un) { un = uu; P = p; cap = cp_; CP = cp; gov = c.name; }
   }
+  // Fire, NDS 16.2: a_eff on 4 (or 3) faces; Table 16.2.2: Fc x 2.58 x CP, with CP from FcE x 2.03 on the reduced
+  // section (slenderness on the smaller reduced dimension); ASD D + L.
   const a = charDepth(basis.fire);
-  const capF = a ? colCap(b - 2 * a, d - 2 * a, Le, g.Fc * 2.58, g.Emin * 1e6 * 2.03) : Infinity;
+  let capF = Infinity, fire: ColumnResult['fire'] = null;
+  if (a > 0) {
+    const { bf, df } = reducedSection(b, d, a, basis.colExp);
+    capF = bf > 0 && df > 0 && Le / Math.min(bf, df) <= 50 ? columnStability(Le / Math.min(bf, df), FIRE.Fc * g.Fc, FIRE.FcE * g.Emin * 1e6) * FIRE.Fc * g.Fc * bf * df : 0;
+    fire = { a, bf, df, P: PD + PL, cap: capF };
+  }
   const u = { n: un, f: a ? (capF > 0 ? (PD + PL) / capF : 9.99) : 0 }, umax = Math.max(u.n, u.f);
-  return { b, d, P, PD, PL, cap, capF, CP, leOverD, gov, u, umax, ok: umax <= 1 };
+  return { b, d, P, PD, PL, cap, capF, CP, leOverD, gov, fire, u, umax, ok: umax <= 1 };
 }

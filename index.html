@@ -62,7 +62,11 @@
       <label for="H">Story height</label>
       <div class="row"><input id="H" type="range" min="10" max="18" step="0.5" value="13"><output id="H_o"></output></div>
       <label for="fire">Fire resistance (exposed timber)</label>
-      <select id="fire"><option value="0">None</option><option value="1" selected>1 hour</option><option value="2">2 hour</option></select>
+      <select id="fire"><option value="0">None</option><option value="1" selected>1 hour</option><option value="1.5">1 1/2 hour</option><option value="2">2 hour</option></select>
+      <div class="two">
+        <div><label for="cltFallOff">CLT char model</label><select id="cltFallOff"><option value="1" selected>Lamination fall-off</option><option value="0">No fall-off</option></select></div>
+        <div><label for="colExp">Columns exposed</label><select id="colExp"><option value="4" selected>4 sides</option><option value="3">3 sides</option></select></div>
+      </div>
     </div>
 
     <div class="card">
@@ -213,6 +217,8 @@
         <div style="overflow-x:auto"><table class="t" id="t_str"></table></div>
         <h3>1a. Design values and adjustment factors <span class="ref">NDS 2018; governing combination</span></h3>
         <div style="overflow-x:auto"><table class="t" id="t_fac"></table></div>
+        <h3>1b. Fire <span class="ref">NDS 2018 16.2: effective char, residual section, Table 16.2.2 factors, ASD D + L</span></h3>
+        <div style="overflow-x:auto"><table class="t" id="t_fire"></table></div>
         <h3>2. Vibration <span class="ref">guide frequency method, Dunkerley; acceleration is a DG 11 style placeholder</span></h3>
         <table id="t_vib"></table>
         <h3>3. Quantities <span class="ref" id="q_unit"></span></h3>

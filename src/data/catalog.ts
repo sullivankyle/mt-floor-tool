@@ -7,6 +7,7 @@ import costs from './costs.json';
 import mfrs from './manufacturers.json';
 import sites from './sites.json';
 import sections from './sections.json';
+import conn from './connections.json';
 
 const strip = <T extends object>(o: T): T => Object.fromEntries(Object.entries(o).filter(([k]) => !k.startsWith('_'))) as T;
 const clone = <T>(x: T): T => JSON.parse(JSON.stringify(x));
@@ -22,14 +23,15 @@ export function defaultCatalog(): Catalog {
     inst: strip(costs.inst), conn: strip(costs.conn), frt: strip(costs.frt), logi: strip(costs.logi),
     mfrs: mfrs.mfrs,
     sites: sites.sites,
+    connGeom: conn.connGeom,
   }) as unknown as Catalog;   // JSON tuples widen to arrays; shapes are checked by tests
   resolvePanels(cat.panels, cat.lams);
   return cat;
 }
 
 /** Defaults for the Phase 2 design-basis inputs (merged into older saved inputs). */
-export const DESIGN_DEFAULTS: Pick<Inputs, 'method' | 'panelCont' | 'purlinCont' | 'llr' | 'Ke'> =
-  { method: 'ASD', panelCont: 'cont', purlinCont: 'two', llr: true, Ke: 1.0 };
+export const DESIGN_DEFAULTS: Pick<Inputs, 'method' | 'panelCont' | 'purlinCont' | 'llr' | 'Ke' | 'cltFallOff' | 'colExp'> =
+  { method: 'ASD', panelCont: 'cont', purlinCont: 'two', llr: true, Ke: 1.0, cltFallOff: true, colExp: 4 };
 
 /** Standard glulam sections. All in in. */
 export const PWS: number[] = sections.purlinWidths;

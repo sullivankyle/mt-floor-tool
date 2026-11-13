@@ -35,6 +35,10 @@ npm run build      # type check, then a single self-contained dist/index.html
 
 NDS 2018 with ASCE 7-22 gravity combinations, selectable ASD or LRFD. CLT properties are computed from the layup (PRG 320-2019 Appendix X3); glulam values come from NDS Supplement Tables 5A and 5B. Panels and two-span purlins are analysed as continuous beams with pattern live load. Live load reduction follows ASCE 7-22 §4.7. See `ASSUMPTIONS.md` for everything simplified.
 
+## Fire (Phase 3)
+
+NDS 2018 Chapter 16 with ratings up to 2 hours. Effective char a_eff = 1.2 a_char. CLT chars from the soffit with or without lamination fall-off (eq. 16.2-3 or 16.2-2), and its residual section is computed from the actual layup. Glulam beams are exposed on 3 sides and columns on 3 or 4. Strengths use the Table 16.2.2 factors, with CL and CP recomputed on the reduced section. Connection protection (16.3) is screened by member width against the effective char depth.
+
 ## Why TypeScript
 
 The engine passes many numbers that look alike (psf vs plf, in. vs ft, values in units of 10^6). Typed inputs and results, with units noted on every field, catch mix-ups while the code is restructured, at no runtime cost.

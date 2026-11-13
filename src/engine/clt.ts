@@ -3,7 +3,7 @@
  * and flatwise design per NDS 2018 Chapter 10.
  */
 import type { DesignBasis, LamGrade, Panel, Util } from './types';
-import { charDepth, cltFireRatio } from './fire';
+import { cltCharDepth, cltFireRatio, FIRE } from './fire';
 import { combos, LRFD } from './loads';
 import { envelope, supportLoad } from './beam';
 
@@ -91,6 +91,7 @@ export interface PanelResult {
   dT: number;      // long-term deflection Kcr dD + dL, in.
   u: Util;
   fr: number;      // fire section-modulus ratio (-)
+  fire: { achar: number; aeff: number; nlam: number; M: number; cap: number } | null; // in., in., -, lbf-ft/ft, lbf-ft/ft
   umax: number;
   ok: boolean;
   sup: { D: number; L: number };  // load to the governing supporting line (unfactored, unreduced live), plf
@@ -106,7 +107,7 @@ export const KCR_CLT = 2.0;
  * Deflection: bending + shear (Timoshenko, matches NDS 10.4.1.1 Ks); live L/360, Kcr dD + dL <= L/240.
  * @param L span, ft; @param n spans; @param sdl superimposed dead, psf; @param LL live, psf (unreduced); @param llf live reduction factor (-)
  */
-export function panelCheck(basis: DesignBasis, P: Panel, L: number, n: number, sdl: number, LL: number, llf = 1): PanelResult {
+export function panelCheck(basis: DesignBasis, P: Panel, L: number, n: number, sdl: number, LL: number, llf = 1, g?: LamGrade): PanelResult {
   const D = psfOf(P) + sdl, Lr = LL * llf, Lin = L * 12;
   const EIe = P.EI * 1e6, GA = P.GA * 1e6;
   const u: Util = { b: 0, v: 0, dl: 0, dt: 0, f: 0, br: 0 };
@@ -122,12 +123,18 @@ export function panelCheck(basis: DesignBasis, P: Panel, L: number, n: number, s
   const dL = envelope(n, L, 0, LL, EIe, GA).defl, dD = envelope(n, L, D, 0, EIe, GA).defl;
   const dT = KCR_CLT * dD + dL;
   u.dl = dL / (Lin / 360); u.dt = dT / (Lin / 240);
-  let fr = 1; const a = charDepth(basis.fire);
-  if (a) {   // fire: ASD D + L, residual major plies (concept method, Phase 3 replaces)
-    const Mf = envelope(n, L, D, Lr, EIe, GA, 0, false).Mpos;
-    fr = cltFireRatio(P, a); u.f = fr > 0 ? Mf / (2.85 * P.FbS * fr) : 9.99;
+  // Fire, NDS 16.2: char from the soffit (16.2.1.3/16.2-4), residual section from the actual layup (16.2.1.5),
+  // strength 2.85 x FbS (Table 16.2.2, CL = 1 flatwise), ASD D + L. Both moment signs checked on the residual section.
+  let fr = 1, fire: PanelResult['fire'] = null;
+  if (basis.fire > 0) {
+    const ch = cltCharDepth(P.layers, basis.fire, basis.cltFallOff);
+    const e = envelope(n, L, D, Lr, EIe, GA, 0, false), Mf = Math.max(e.Mpos, e.Mneg);
+    fr = g ? cltFireRatio(g, P.layers, ch.aeff) : 0;
+    const cap = FIRE.Fb * P.FbS * fr;
+    u.f = cap > 0 ? Mf / cap : 9.99;
+    fire = { achar: ch.achar, aeff: ch.aeff, nlam: ch.nlam, M: Mf, cap };
   }
   const umax = Math.max(u.b, u.v, u.dl, u.dt, u.f);
   const EIapp = EIe / (1 + 11.5 * EIe / (GA * Lin * Lin));
-  return { L, n, w: D + LL, M, V, FbSp, Vsp, gov, EIapp, dL, dT, u, fr, umax, ok: umax <= 1, sup: supportLoad(n, L, D, LL) };
+  return { L, n, w: D + LL, M, V, FbSp, Vsp, gov, EIapp, dL, dT, u, fr, fire, umax, ok: umax <= 1, sup: supportLoad(n, L, D, LL) };
 }

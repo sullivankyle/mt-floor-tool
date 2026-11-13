@@ -3,12 +3,13 @@
  * Load path: CLT panel reactions -> purlins -> girders (smeared per ft) -> columns (tributary A x B per floor).
  * Each member applies its own ASCE 7-22 §4.7 live load reduction; reactions pass on unreduced live load.
  */
-import type { Catalog, Cfg, DesignBasis, Inputs, Panel } from './types';
+import { basisOf, type Catalog, type Cfg, type DesignBasis, type Inputs, type LamGrade, type Panel } from './types';
 import { psfOf, panelCheck, stripDeflection, type PanelResult } from './clt';
 import { memberCheck, beamGrade, lePointFactor, type MemberResult, type Bracing } from './glulam';
 import { columnCheck, type ColumnResult } from './columns';
 import { bayVibration } from './vibration';
 import { liveLoadReduction, KLL } from './loads';
+import { connectionProtection, type ConnFlag } from './fire';
 import { COLS } from '../data/catalog';
 
 export interface StructureResult {
@@ -28,6 +29,7 @@ export interface StructureResult {
   depth: number;      // structural depth, in.
   wts: { panel: number; purlin: number; girder: number; column: number }; // pick weights, lb
   heavy: [string, number];
+  conn: ConnFlag[];   // NDS 16.3 connection protection flags (empty without a fire rating)
   strOk: boolean; depthOk: boolean; pickOk: boolean; vibF: boolean; vibA: boolean;
 }
 
@@ -36,15 +38,15 @@ export interface StructureResult {
  * evaluations per layout reuse it. Keyed on every value the check reads (panel edits change the key).
  */
 const panelMemo = new Map<string, PanelResult>();
-function panelCached(basis: DesignBasis, P: Panel, L: number, n: number, sdl: number, LL: number, llf: number): PanelResult {
-  const k = [basis.method, basis.fire, P.EI, P.GA, P.FbS, P.Vs, P.t, P.pl, P.pcf, L, n, sdl, LL, llf].join('|');
+function panelCached(basis: DesignBasis, P: Panel, L: number, n: number, sdl: number, LL: number, llf: number, g?: LamGrade): PanelResult {
+  const k = [basis.method, basis.fire, basis.cltFallOff, P.grade, P.layers.join(','), P.EI, P.GA, P.FbS, P.Vs, P.t, P.pl, P.pcf, L, n, sdl, LL, llf].join('|');
   let r = panelMemo.get(k);
-  if (!r) { if (panelMemo.size > 5000) panelMemo.clear(); r = panelCheck(basis, P, L, n, sdl, LL, llf); panelMemo.set(k, r); }
+  if (!r) { if (panelMemo.size > 5000) panelMemo.clear(); r = panelCheck(basis, P, L, n, sdl, LL, llf, g); panelMemo.set(k, r); }
   return r;
 }
 
 export function evalStructure(o: Inputs, cat: Catalog, cfg: Cfg): StructureResult {
-  const basis: DesignBasis = { method: o.method, fire: o.fire };
+  const basis = basisOf(o);
   const P = cat.panels[cfg.pi], gl = cat.gl, E = beamGrade(cat).Ex * 1e6, T2 = cfg.sys !== 'T1', stack = cfg.sys === 'T3';
   const s = T2 ? o.A / cfg.n : null, Lp = (T2 ? s : o.B) as number, pPsf = psfOf(P);
   const pw = cfg.pw as number, pd = cfg.pd as number, gd = cfg.gd as number;
@@ -53,7 +55,7 @@ export function evalStructure(o: Inputs, cat: Catalog, cfg: Cfg): StructureResul
   // CLT: continuous over the spans one shipped panel covers (max 3 analysed)
   const nPan = o.panelCont === 'cont' && Lpan ? Math.min(3, Math.max(1, Math.round(Lpan / Lp))) : 1;
   const llfPan = liveLoadReduction(o.LLd, KLL.other, Lp * 1.5 * Lp, 1, o.llr).factor;   // one-way slab: AT <= span x 1.5 span
-  const pan = panelCached(basis, P, Lp, nPan, o.sdl, o.LLd, llfPan);
+  const pan = panelCached(basis, P, Lp, nPan, o.sdl, o.LLd, llfPan, cat.lams[P.grade]);
   const Dfl = pPsf + o.sdl;
   // purlins
   const purSpans = T2 && stack && o.purlinCont === 'two' && o.layout === 'corr' && o.nb === 2 ? 2 : 1;
@@ -90,5 +92,5 @@ export function evalStructure(o: Inputs, cat: Catalog, cfg: Cfg): StructureResul
   const depthOk = !o.maxD || depth <= o.maxD, pickOk = !o.maxPick || heavy[1] <= o.maxPick * 1000;
   return { cfg, P, T2, stack, s, Lp, nPan, purSpans, llf: { pan: llfPan, pur: llfPur, gir: llfGir, col: llfCol },
            pan, pur, gir, col, Pcol: PD + PL, wE, dp, fp: vib.fp, dj: vib.dj, fj: vib.fj, dg: vib.dg, fg: vib.fg, fn: vib.fn, W: vib.W, ap: vib.ap,
-           Lpan, depth, wts, heavy, strOk, depthOk, pickOk, vibF: vib.fn >= o.target, vibA: vib.ap <= o.alim };
+           Lpan, depth, wts, heavy, conn: connectionProtection(o.fire, cfg.sys, pw, cfg.gw, col.b, cat.connGeom.concealedW), strOk, depthOk, pickOk, vibF: vib.fn >= o.target, vibA: vib.ap <= o.alim };
 }
