@@ -13,6 +13,10 @@ npm run build      # type check, then a single self-contained dist/index.html
 
 **To just use the tool, double-click `mt-floor-tool.html`** in the repo root. It is the single-file build (all JS and CSS inlined), refreshed by every `npm run build`. The root `index.html` is the source page; it only runs through `npm run dev`, and it says so if opened from disk.
 
+## GitHub Pages
+
+`.github/workflows/pages.yml` runs on every push to `main` (or manually from the Actions tab). It installs, runs the tests, builds, and publishes the single-file page as the site's `index.html`. Nothing is published if a test fails. One-time setup: in the repo's **Settings > Pages**, set **Source** to **GitHub Actions**. A Pages site is publicly reachable even when the repo is private (unless your plan offers private Pages), and Pages from a private repo needs a paid GitHub plan.
+
 ## Layout
 
 | Path | What |
