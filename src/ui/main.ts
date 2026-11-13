@@ -1,6 +1,5 @@
 // @ts-nocheck -- UI ported verbatim from concept v7; the typed, tested code is src/engine.
 // Typing and splitting this module is deferred to Phase 6 (UI polish).
-import './styles.css';
 import { defaultCatalog, DESIGN_DEFAULTS, PWS, GWS, DEP, COLS } from '../data/catalog';
 import { makeProject, readProject, validateMfrs, normalizeMfrs } from '../data/project';
 import { study, rank, evalDesign, priceWith, cltReason, glReason, miles, layouts, whyFail,
@@ -835,3 +834,4 @@ $('proj_file').addEventListener('change', async e => {
 applyTips();
 renderCatalog();
 render();
+window.__mtStarted = true;   // tells the page's startup check that the app is running

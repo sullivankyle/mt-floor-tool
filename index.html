@@ -4,8 +4,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mass timber floor system study - concept demo</title>
+<link rel="stylesheet" href="./src/ui/styles.css">
 </head>
 <body>
+<script>
+  // Opened straight from disk, browsers block the source page's module script, so nothing calculates.
+  // The built page sets window.__mtStarted; the warning shows only if the app did not start.
+  window.addEventListener('load', function () { setTimeout(function () {
+    if (window.__mtStarted) return;
+    var d = document.createElement('div');
+    d.style.cssText = 'background:#fbe6e4;color:#b3372f;padding:12px 24px;font:600 14px system-ui,sans-serif;border-bottom:1px solid #e3c2be';
+    d.textContent = 'This is the source page and does not run from a file. Open mt-floor-tool.html (in this folder) instead, or run "npm run dev" and open http://localhost:5173.';
+    document.body.insertBefore(d, document.body.firstChild);
+  }, 800); });
+</script>
 <header>
   <h1>Mass timber floor system study <span class="ref">concept demo</span></h1>
   <span class="banner">Concept tool. Every change re-runs the full study; values tagged as placeholders on the Catalog tab are estimates. Not for design or pricing.</span><span id="calcstat"></span>
@@ -61,7 +73,7 @@
       <div class="hint">Finishes, partitions, MEP. Enter a topping below instead of here.</div>
       <div class="two">
         <div><label for="topType">Topping</label><select id="topType"><option value="none" selected>None</option><option value="concrete">Concrete</option><option value="gypcrete">Gypcrete</option></select></div>
-        <div><label for="topT">Thickness, in.</label><select id="topT"><option value="0">0</option><option value="1.5" selected>1 1/2</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></div>
+        <div><label for="topT">Thickness, in.</label><select id="topT"><option value="0" selected>0</option><option value="1.5">1 1/2</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></div>
       </div>
       <div class="two">
         <div><label for="topGamma">Topping composite (vibration)</label><select id="topGamma"><option value="0" selected>Acoustic mat (0)</option><option value="0.05">Cast direct (0.05)</option><option value="0.15">Nominal screws (0.15)</option><option value="0.5">Designed TCC (0.5)</option></select></div>

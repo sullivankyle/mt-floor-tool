@@ -11,7 +11,7 @@ npm test           # engine tests (golden files and guide examples)
 npm run build      # type check, then a single self-contained dist/index.html
 ```
 
-`dist/index.html` opens straight from the file system; all JS and CSS are inlined.
+**To just use the tool, double-click `mt-floor-tool.html`** in the repo root. It is the single-file build (all JS and CSS inlined), refreshed by every `npm run build`. The root `index.html` is the source page; it only runs through `npm run dev`, and it says so if opened from disk.
 
 ## Layout
 
