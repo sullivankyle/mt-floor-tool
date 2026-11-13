@@ -39,6 +39,10 @@ NDS 2018 with ASCE 7-22 gravity combinations, selectable ASD or LRFD. CLT proper
 
 NDS 2018 Chapter 16 with ratings up to 2 hours. Effective char a_eff = 1.2 a_char. CLT chars from the soffit with or without lamination fall-off (eq. 16.2-3 or 16.2-2), and its residual section is computed from the actual layup. Glulam beams are exposed on 3 sides and columns on 3 or 4. Strengths use the Table 16.2.2 factors, with CL and CP recomputed on the reduced section. Connection protection (16.3) is screened by member width against the effective char depth.
 
+## Vibration (Phase 4)
+
+The WoodWorks guide's §4.3 modal response analysis: resonant peak acceleration (CCIP-016 harmonics, walking-frequency sweep, frequency weighting) and transient RMS velocity (effective impulse, 1/3-octave bands). The response calculations reproduce the guide's three worked examples from their published modal data. Modes for each design are estimated in closed form: orthotropic plate panel modes and a combined bay mode. They are not FEM results, so confirm a final design with a model (see `docs/handoff-fem.md`). Toppings and CLT-to-beam composite action follow §3.3.5 and §3.4. The AISC DG 11 walking formula remains available as an option.
+
 ## Why TypeScript
 
 The engine passes many numbers that look alike (psf vs plf, in. vs ft, values in units of 10^6). Typed inputs and results, with units noted on every field, catch mix-ups while the code is restructured, at no runtime cost.

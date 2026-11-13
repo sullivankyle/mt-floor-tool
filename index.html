@@ -52,7 +52,15 @@
       </select>
       <label for="sdl">Superimposed dead load</label>
       <div class="row"><input id="sdl" type="range" min="0" max="50" step="1" value="25"><output id="sdl_o"></output></div>
-      <div class="hint">Finishes, partitions, topping, MEP.</div>
+      <div class="hint">Finishes, partitions, MEP. Enter a topping below instead of here.</div>
+      <div class="two">
+        <div><label for="topType">Topping</label><select id="topType"><option value="none" selected>None</option><option value="concrete">Concrete</option><option value="gypcrete">Gypcrete</option></select></div>
+        <div><label for="topT">Thickness, in.</label><select id="topT"><option value="0">0</option><option value="1.5" selected>1 1/2</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></div>
+      </div>
+      <div class="two">
+        <div><label for="topGamma">Topping composite (vibration)</label><select id="topGamma"><option value="0" selected>Acoustic mat (0)</option><option value="0.05">Cast direct (0.05)</option><option value="0.15">Nominal screws (0.15)</option><option value="0.5">Designed TCC (0.5)</option></select></div>
+        <div><label for="beamGamma">CLT-to-beam composite</label><select id="beamGamma"><option value="0" selected>None</option><option value="0.5">Clamping screws (0.5)</option></select></div>
+      </div>
     </div>
 
     <div class="card">
@@ -103,6 +111,12 @@
 
     <div class="card">
       <h2>Vibration targets</h2>
+      <label for="vibMethod">Method</label>
+      <select id="vibMethod"><option value="guide" selected>Mass timber guide 4.3 (modal response)</option><option value="dg11">AISC DG 11 walking formula</option></select>
+      <div class="two">
+        <div><label for="fwMax">Fastest walking</label><select id="fwMax"><option value="1.6">1.6 Hz slow</option><option value="1.85">1.85 Hz moderate</option><option value="2.1" selected>2.1 Hz fast</option><option value="2.5">2.5 Hz corridor</option></select></div>
+        <div><label for="vlim">RMS velocity limit</label><select id="vlim"><option value="4000">4,000 mips</option><option value="8000">8,000 mips</option><option value="16000" selected>16,000 mips</option><option value="32000">32,000 mips</option></select></div>
+      </div>
       <label for="target">Minimum floor frequency</label>
       <div class="row"><input id="target" type="range" min="3" max="15" step="0.5" value="5"><output id="target_o"></output></div>
       <label for="alim">Peak walking acceleration limit</label>
@@ -219,7 +233,7 @@
         <div style="overflow-x:auto"><table class="t" id="t_fac"></table></div>
         <h3>1b. Fire <span class="ref">NDS 2018 16.2: effective char, residual section, Table 16.2.2 factors, ASD D + L</span></h3>
         <div style="overflow-x:auto"><table class="t" id="t_fire"></table></div>
-        <h3>2. Vibration <span class="ref">guide frequency method, Dunkerley; acceleration is a DG 11 style placeholder</span></h3>
+        <h3>2. Vibration <span class="ref">Mass Timber Floor Vibration Design Guide 4.2 and 4.3, closed-form modal estimate (or AISC DG 11)</span></h3>
         <table id="t_vib"></table>
         <h3>3. Quantities <span class="ref" id="q_unit"></span></h3>
         <table id="t_qty"></table>

@@ -1,7 +1,7 @@
 # Assumptions, simplifications and placeholders
 
 One line per item, with the code location and the reference. Status: **S** simplification, **P** placeholder value, **B** known bug kept for now, **V** not verified against the source document.
-Current as of Phase 3 (fire, NDS Chapter 16). When an item is fixed, delete its line in the same commit.
+Current as of Phase 4 (vibration, the guide's methods). When an item is fixed, delete its line in the same commit.
 
 References: NDS 2018 and NDS Supplement 2018 (in `refs/`; the handoff named NDS 2024, but 2018 is the edition supplied), PRG 320-2019, ASCE 7-22 (not in `refs/`), WoodWorks *U.S. Mass Timber Floor Vibration Design Guide* (2023, "the guide"), AISC DG 11. APA PR-L332(C) in `refs/` is the Canadian (LSD/CSA O86) edition, so it is not used for U.S. values.
 
@@ -59,12 +59,21 @@ References: NDS 2018 and NDS Supplement 2018 (in `refs/`; the handoff named NDS 
 - S: NDS 16.2.4 glulam fire layups are a specification note only. `ui/main.ts:considerations`
 - P: Connection protection (16.3) is screened by geometry: a concealed connector 1.5 in. wide (placeholder) needs a member width >= 1.5 + 2 a_eff; other connections get cover notes only. `engine/fire.ts:connectionProtection`, `data/connections.json`
 
-## Vibration (concept method; Phase 4 replaces)
-- S: Frequency of each component from its own simple-span deflection, f = 0.18 sqrt(g/delta), combined by Dunkerley (guide §4.2.1). Continuity is not credited. `engine/vibration.ts`
-- S: Panel frequency uses EI with no shear deformation. `engine/system.ts`
-- P: Peak acceleration by the AISC DG 11 walking formula as a stand-in; not the guide's method and not validated for timber. `engine/vibration.ts:bayVibration`
-- S: DG 11 style effective widths with Cj = 2.0 and Cg = 1.8 and no width limits. `engine/vibration.ts:bayVibration`
-- S: The CLT Handbook span limit (guide §4.2.2) is only shown as a method check. `engine/clt.ts:cltSpanLimit`
+## Vibration (guide §4.3 with closed-form modes; Phase 4)
+- S: **Modes are estimated in closed form, not by FEM (the largest uncertainty in the tool).** The fundamental bay mode takes its frequency from Dunkerley (§4.2.1) over panel, purlin and girder, and its modal mass is deflection-weighted from the components. `engine/vibration.ts:floorModes`
+- S: Panel component: simply supported orthotropic plate (1,n) modes over span x field width (B for purlin systems, A for CLT on girders), with Timoshenko shear reduction on the span. Modal mass = m Lx Ly / 4 per span, times the number of continuous spans (the guide's Example 1: same frequency, double the modal mass). Checked against Example 1's FEM: within 5% on frequency and 10% on modal mass. `engine/vibration.ts:plateModes`
+- P: Plate torsion H = 0.25 sqrt(Dx Dy), calibrated to the one guide example with FEM results (Example 1). `data/vibration.json:kH`
+- S: Beam components: AISC DG 11 effective widths (Bj = 2.0 (Ds/Dj)^0.25 Lj, Bg = 1.8 (Dj/Dg)^0.25 Lg), capped at 2/3 of the floor width (girders: corridor building width or 3 B; purlins: 2 A, so the floor is assumed at least 3 bays long). Modal mass = W / 2g, the value for a sine-shaped span of uniform width. DG 11's own formula implies W / g with a 0.5 reduction factor, so this tool predicts roughly twice DG 11's acceleration for beam-dominated bays. Not validated against FEM for beam-supported floors; confirm with a model. `engine/vibration.ts:floorModes`
+- S: Higher modes: panel (1,n) plate modes on rigid supports only; no separate beam higher modes; no exterior-wall or facade support springs; connections pinned (the guide's examples use fixity, which raises frequencies). `engine/vibration.ts:floorModes`
+- S: Response at the bay centre with self-excitation (mu_e = mu_r = 1 for the bay mode, sin(n pi/2) for plate modes); no walking paths or separate receiver points. `engine/vibration.ts`
+- S: Resonant check per §4.3.1 (CCIP-016 harmonics, rho with path = max(A, bays x B), stride 2.5 ft, walker 168 lbf) over modes below 15 Hz, sweeping fw from max(1.25, fw,max - 0.6) to fw,max in 0.025 Hz steps; frequency-weighted peak acceleration against the limit. Transient per §4.3.2 at fw,max over modes up to 2 f1, RMS over one footfall in 200 steps, weighted if f1 < 8 Hz, total RMS against the limit (the 1/3-octave value is reported). Regimes per §4.3.2: resonant if f1 < 4 fw + 2, transient if f1 > 4 fw. `engine/vibration.ts:guideEvaluate`
+- S: Tests reproduce the post-processing in Examples 1, 2 and 3 from their published modal data (Tables 7-2/7-5, 8-6, 9-11) to within 1 to 5%; the residual comes from rounding in the published tables. `tests/vibration-guide.test.ts`
+- S: Topping: weight added to the dead load (strength and vibration). Concrete stiffness credited for vibration only, E = 1.35 x 57,000 sqrt(f'c) and G = 0.4 E (§3.3.5), by the gamma method (§3.4.1, gamma moved to the component without the neutral axis; reproduces Example 3's 1,155,000 k-in^2/ft); gypcrete is mass only. Factors are the low end of Table 3-6. `engine/vibration.ts:compositeEI`, `engine/system.ts:vibrationOf`
+- P: Topping densities 145 pcf (concrete) and 115 pcf (gypcrete), f'c 4,000 psi. `data/vibration.json`
+- S: CLT-to-beam incidental composite action (§3.4.3) is optional (gamma 0.5) for vibration only: purlins and no-purlin girders use the CLT minor direction, flush girders the major direction, dropped girders none; flange width min(L/2.5, spacing). `engine/system.ts:vibrationOf`
+- S: The minimum-frequency target is kept as a separate screening input (default 5 Hz; the guide says floors below 3 to 4 Hz are not recommended). `engine/system.ts`
+- S: The CLT Handbook span limit (§4.2.2, -10% when topping > 2 x panel weight) is shown for information only; it applies to bearing-wall floors. `ui/main.ts:vibRows`
+- S: The AISC DG 11 option is the concept's method (Po = 65 lb, effective widths without caps, panel strip frequency) with topping and composite stiffness now included. `engine/vibration.ts:bayVibration`
 
 ## Connections
 - P: Priced as installed allowances per end or per column; no capacity check. `data/costs.json:conn`, `engine/cost.ts:priceWith`

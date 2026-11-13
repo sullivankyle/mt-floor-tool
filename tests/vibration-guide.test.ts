@@ -64,6 +64,18 @@ describe('Example 3 (SAP2000, Table 9-11 modal data, fw = 2.0 Hz, 3.5% damping)'
   });
 });
 
+describe('DG 11 option keeps the Phase 3 behaviour', () => {
+  it('case a with vibMethod dg11: best design $53.95/sf, 3 flush purlins (as committed in Phase 3)', async () => {
+    const { caseInputs } = await import('./golden/run');
+    const { defaultCatalog } = await import('../src/data/catalog');
+    const { study, rank } = await import('../src/engine');
+    const o = { ...caseInputs('a-default-office-corridor'), vibMethod: 'dg11' as const };
+    const best = rank(o, study(o, defaultCatalog()))[0];
+    expect(best.r!.cpsf).toBeCloseTo(53.95, 2);
+    expect([best.cfg.sys, best.cfg.n]).toEqual(['T2', 3]);
+  });
+});
+
 describe('Table 4-4: CLT Handbook vibration-controlled spans (rho A form)', () => {
   const rows: [string, number, number, number, number][] = [['E1', 115, 0.45, 49.5, 13.1], ['E1', 440, 0.45, 82.5, 18.2], ['E1', 1080, 0.45, 115.5, 22.7],
     ['E2', 389, 0.52, 82.5, 17.2], ['V2', 95, 0.45, 49.5, 12.4], ['V2', 363, 0.45, 82.5, 17.2], ['V2', 898, 0.45, 115.5, 21.5], ['V4', 285, 0.39, 82.5, 16.3]];

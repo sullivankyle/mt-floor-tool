@@ -31,6 +31,8 @@ export interface LayupProps {
   GA: number;   // (GA)eff,f,0, 10^6 lbf/ft
   FbS: number;  // (FbS)eff,f,0, ASD reference, lbf-ft/ft
   Vs: number;   // Vs,0, ASD reference, lbf/ft
+  EI90: number; // (EI)eff,f,90, 10^6 lbf-in^2/ft
+  EA0: number; EA90: number; // axial stiffness, 10^6 lbf/ft
 }
 
 /**
@@ -60,7 +62,16 @@ export function cltLayupProps(g: LamGrade, layers: number[]): LayupProps {
   const Seff = 2 * EI / (Emaj * tp);
   const FbS = 0.85 * g.major.Fb * Seff / 12;
   const Vs = g.minor.Fs * 2 / 3 * b * tp;
-  return { t: tp, pl: n, EI: EI / 1e6, GA: GA / 1e6, FbS, Vs };
+  // Minor direction EI (eq. X3-4: interior layers 2..n-1 only, about their centroid) and axial stiffness in both
+  // directions (guide 3.3.3: sum Ei bi di, with E/30 for layers perpendicular to the direction considered).
+  const E90 = layers.map((_, i) => i % 2 === 0 ? Emaj / 30 : Emin);
+  let y9 = 0, ea9 = 0, eay9 = 0; const yc9: number[] = [];
+  layers.forEach((t, i) => { if (i > 0 && i < n - 1) { ea9 += E90[i] * t; eay9 += E90[i] * t * (y9 + t / 2); } yc9.push(y9 + t / 2); y9 += t; });
+  const na9 = ea9 > 0 ? eay9 / ea9 : tp / 2;
+  let EI90 = 0;
+  layers.forEach((t, i) => { if (i > 0 && i < n - 1) EI90 += E90[i] * b * (t ** 3 / 12 + t * (yc9[i] - na9) ** 2); });
+  const EA0 = layers.reduce((s, t, i) => s + E[i] * b * t, 0), EA90 = layers.reduce((s, t, i) => s + E90[i] * b * t, 0);
+  return { t: tp, pl: n, EI: EI / 1e6, GA: GA / 1e6, FbS, Vs, EI90: EI90 / 1e6, EA0: EA0 / 1e6, EA90: EA90 / 1e6 };
 }
 
 /** Fills t, pl, EI, GA, FbS, Vs on each panel from its layup, or from its override where given. Mutates and returns panels. */
@@ -69,7 +80,7 @@ export function resolvePanels(panels: Panel[], lams: Record<string, LamGrade>): 
     const g = lams[P.grade];
     if (g && P.layers && P.layers.length) {
       const p = cltLayupProps(g, P.layers);
-      Object.assign(P, { t: p.t, pl: p.pl, EI: p.EI, GA: p.GA, FbS: p.FbS, Vs: p.Vs });
+      Object.assign(P, { t: p.t, pl: p.pl, EI: p.EI, GA: p.GA, FbS: p.FbS, Vs: p.Vs, EI90: p.EI90, EA0: p.EA0, EA90: p.EA90 });
       if (P.real === undefined) P.real = true;
     }
     if (P.override) { Object.assign(P, Object.fromEntries(Object.entries(P.override).filter(([k, v]) => k !== 'src' && v != null))); }

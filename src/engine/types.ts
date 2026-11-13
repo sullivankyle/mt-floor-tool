@@ -25,6 +25,8 @@ export interface Panel {
   FbS: number;        // effective moment capacity (ASD reference), lbf-ft/ft
   GA: number;         // effective shear stiffness, 10^6 lbf/ft
   Vs: number;         // rolling shear capacity (ASD reference), lbf/ft
+  EI90?: number;      // minor-direction stiffness, 10^6 lbf-in^2/ft (from layup)
+  EA0?: number; EA90?: number; // axial stiffness, 10^6 lbf/ft (from layup)
   pcf: number;        // density, lb/ft^3
   cost: number;       // supply price, $/ft^3
   real: boolean;      // true = computed from published lamination values or published panel values
@@ -72,6 +74,12 @@ export interface Catalog {
   frt: { rate: number; payload: number; osPct: number; fixed: number; broker: number; tarCAUS: number; tarUSCA: number }; // $/mi, lb, %, $/load, $/load, %, %
   logi: { panW: number; panMax: number };                                        // ft, ft
   connGeom: { concealedW: number; src?: string; verified?: boolean };            // concealed connector width, in.
+  vib: {
+    walker: { P: number; stride: number };   // lbf, ft
+    fwStep: number; fwSpan: number;          // Hz
+    kH: number;                              // plate torsion factor (-)
+    toppings: Record<string, { pcf: number; fc?: number; dyn?: number; stiff: boolean; src: string }>;
+  };
   mfrs: Manufacturer[];
   sites: Record<string, Site>;
 }
@@ -112,6 +120,13 @@ export interface Inputs {
   Ke: number;        // column effective length factor (-), NDS Appendix G
   cltFallOff: boolean; // CLT char model with lamination fall-off (NDS 16.2-3)
   colExp: 3 | 4;     // column faces exposed to fire
+  vibMethod: 'guide' | 'dg11'; // guide §4.3 modal response (closed-form modes), or the AISC DG 11 walking formula
+  fwMax: number;     // fastest walking frequency, Hz (guide Table 3-7)
+  vlim: number;      // RMS velocity limit for high-frequency floors, micro-in./s (guide 3.7)
+  topType: 'none' | 'concrete' | 'gypcrete';
+  topT: number;      // topping thickness, in. (its weight is added to the dead load; keep it out of SDL)
+  topGamma: number;  // topping-to-CLT partial composite factor for vibration (guide Table 3-6)
+  beamGamma: number; // CLT-to-beam partial composite factor for vibration (Table 3-6), 0 = none
   fix: Fix;
 }
 

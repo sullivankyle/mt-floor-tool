@@ -3,7 +3,7 @@
 import './styles.css';
 import { defaultCatalog, DESIGN_DEFAULTS, PWS, GWS, DEP, COLS } from '../data/catalog';
 import { study, rank, evalDesign, priceWith, cltReason, glReason, miles, layouts, whyFail,
-         charDepth, stripDeflection, freqFromDefl, cltSpanLimit, OBJ_VALUE, combos, beamGrade, columnGrade, resolvePanels } from '../engine';
+         charDepth, stripDeflection, freqFromDefl, cltSpanLimit, OBJ_VALUE, G, combos, beamGrade, columnGrade, resolvePanels } from '../engine';
 
 let CAT = defaultCatalog();
 
@@ -46,7 +46,7 @@ function statusOf(r) {
 }
 function parseList(s) { return [...new Set(s.split(/[\s,;]+/).map(Number).filter(x => x >= 8 && x <= 60))].sort((a, b) => a - b); }
 
-const IDS = ['layout', 'nb', 'Wc', 'gA', 'gB', 'sysF', 'occ', 'sdl', 'stories', 'H', 'fire', 'maxD', 'maxPick', 'appear', 'site', 'sup', 'split', 'target', 'alim', 'damp', 'obj', 'method', 'panelCont', 'purlinCont', 'Ke', 'llr', 'cltFallOff', 'colExp'];
+const IDS = ['layout', 'nb', 'Wc', 'gA', 'gB', 'sysF', 'occ', 'sdl', 'stories', 'H', 'fire', 'maxD', 'maxPick', 'appear', 'site', 'sup', 'split', 'target', 'alim', 'damp', 'obj', 'method', 'panelCont', 'purlinCont', 'Ke', 'llr', 'cltFallOff', 'colExp', 'vibMethod', 'fwMax', 'vlim', 'topType', 'topT', 'topGamma', 'beamGamma'];
 function readInputs() {
   const [LLd, LLv] = $('occ').value.split('|').map(Number);
   return {
@@ -58,6 +58,8 @@ function readInputs() {
     target: +$('target').value, alim: +$('alim').value, damp: +$('damp').value / 100, obj: $('obj').value,
     method: $('method').value, panelCont: $('panelCont').value, purlinCont: $('purlinCont').value, Ke: +$('Ke').value, llr: $('llr').checked,
     cltFallOff: $('cltFallOff').value === '1', colExp: +$('colExp').value,
+    vibMethod: $('vibMethod').value, fwMax: +$('fwMax').value, vlim: +$('vlim').value,
+    topType: $('topType').value, topT: +$('topT').value, topGamma: +$('topGamma').value, beamGamma: +$('beamGamma').value,
     fix: { n: null, pi: null, pw: null, pd: null, gw: null, gd: null, ci: null }
   };
 }
@@ -70,6 +72,8 @@ function setInputs(o) {
   const d = Object.assign({}, DESIGN_DEFAULTS, o);
   $('method').value = d.method; $('panelCont').value = d.panelCont; $('purlinCont').value = d.purlinCont; $('Ke').value = String(d.Ke); $('llr').checked = d.llr;
   $('cltFallOff').value = d.cltFallOff ? '1' : '0'; $('colExp').value = String(d.colExp);
+  $('vibMethod').value = d.vibMethod; $('fwMax').value = String(d.fwMax); $('vlim').value = String(d.vlim);
+  $('topType').value = d.topType; $('topT').value = String(d.topT); $('topGamma').value = String(d.topGamma); $('beamGamma').value = String(d.beamGamma);
 }
 const FIX = ['n', 'pi', 'pw', 'pd', 'gw', 'gd', 'ci'];
 function fillFixSelects() { return;
@@ -224,7 +228,10 @@ function considerations(o, r) {
     else add('info', 'No purlins: branch ducts run below the CLT with nothing to cross inside the bay, but there are no pockets to hide them in.');
     if (!r.stack) add('warn', `Every branch leaves the corridor across the corridor-side girder (${dl(c.gd)} in. deep). Plan for penetrations, a drop, a shallower girder on that line, or a dropped-girder layout.`);
   }
-  add(r.fn >= 15 ? 'ok' : r.vibF ? 'info' : 'bad', `Floor frequency ${fmt(r.fn, 1)} Hz (${r.fn < 3 ? 'below 3 Hz' : r.fn < 15 ? '3 to 15 Hz band, guide recommends a more detailed check' : 'above 15 Hz'}); estimated acceleration ${fmt(r.ap, 2)}% g.`);
+  if (r.vib.method === 'guide') {
+    const ev = r.vib.ev;
+    add(r.vibA && r.vibF ? 'ok' : 'bad', `Floor frequency ${fmt(r.fn, 1)} Hz, ${ev.regime} response (guide 4.3): ${ev.res ? `${fmt(ev.apfwPct, 2)}% g peak at ${fmt(ev.res.fw, 2)} Hz walking (limit ${fmt(o.alim, 1)})` : ''}${ev.res && ev.tr ? '; ' : ''}${ev.tr ? `${fmt(ev.vrms, 0)} mips RMS (limit ${fmt(o.vlim, 0)})` : ''}. Modes are closed-form estimates, not FEM; confirm with a model for final design.`);
+  } else add(r.fn >= 15 ? 'ok' : r.vibF ? 'info' : 'bad', `Floor frequency ${fmt(r.fn, 1)} Hz (${r.fn < 3 ? 'below 3 Hz' : r.fn < 15 ? '3 to 15 Hz band, guide recommends a more detailed check' : 'above 15 Hz'}); DG 11 estimated acceleration ${fmt(r.ap, 2)}% g.`);
   if (o.fire) {
     const bad = r.conn.filter(x => !x.ok);
     add(r.pan.u.f > 1 || r.gir.u.f > 1 || (r.pur && r.pur.u.f > 1) || r.col.u.f > 1 ? 'bad' : 'info',
@@ -293,7 +300,7 @@ function renderStudy(o) {
       <div class="kpis">
         <div class="kpi"><b>${fmt(r.depth, 1)} in.</b><span>structural depth</span></div>
         <div class="kpi"><b>${fmt(r.fn, 1)} Hz</b><span>floor frequency</span></div>
-        <div class="kpi"><b>${fmt(r.ap, 2)}% g</b><span>peak acceleration</span></div>
+        <div class="kpi"><b>${r.vrms && !r.ap ? fmt(r.vrms, 0) + ' mips' : fmt(r.ap, 2) + '% g'}</b><span>${r.vrms && !r.ap ? 'RMS velocity' : 'peak acceleration'}</span></div>
         <div class="kpi"><b>${fmt(r.ppk, 1)}</b><span>picks per 1,000 sq ft</span></div>
         <div class="kpi"><b>${fmt(r.heavy[1] / 1000, 1)} kip</b><span>heaviest pick</span></div>
         <div class="kpi"><b>${fmt(r.cfpsf, 3)}</b><span>timber, cu ft per sq ft</span></div>
@@ -357,6 +364,22 @@ function facRows(r, o) {
   return h;
 }
 function vibRows(r, o) {
+  const v = r.vib;
+  if (v.method === 'guide') {
+    const fm = v.fm, ev = v.ev, f2 = x => fmt(x, 2);
+    let h = row('Expected weight (panel + dead + topping + vibration live)', fmt(r.wE, 1), 'psf') +
+      row('Panel stiffness for vibration, EIx / EIy', `${fmt(v.EIx / 1e6, 0)} / ${fmt(v.EIy / 1e6, 0)}`, `10^6 lbf-in^2/ft${r.topPsf ? ' incl. topping (gamma ' + o.topGamma + ')' : ''}`) +
+      row(`Panel plate mode (1,1) on rigid supports, ${fmt(r.Lp, 1)} x ${fmt(r.T2 ? o.B : o.A, 0)} ft${r.nPan > 1 ? ', ' + r.nPan + ' spans' : ''}`, f2(fm.fp), `Hz, modal mass ${fmt(fm.Mp, 1)} lbf-s^2/in.`) +
+      (r.T2 ? row(`Purlin (${o.B} ft span, effective width ${fmt(fm.Bj, 1)} ft)`, f2(fm.fj), `Hz, modal mass ${fmt(fm.Mj, 1)}`) : '') +
+      row(`Girder (${o.A} ft span, effective width ${fmt(fm.Bg, 1)} ft)`, f2(fm.fg), `Hz, modal mass ${fmt(fm.Mg, 1)}`) +
+      row('Bay mode: Dunkerley frequency; deflection-weighted modal mass', `<b>${f2(fm.f1)}</b>`, `Hz (target ${fmt(o.target, 1)}), ${fmt(fm.M1, 1)} lbf-s^2/in.`) +
+      row('Modes used', fm.modes.filter(m => m.mu !== 0).map(m => `${f2(m.f)} Hz`).join(', '), '') +
+      row('Regime (guide 4.3.2)', ev.regime, `f1 vs 4 fw = ${fmt(4 * v.fwMax, 1)} Hz`);
+    if (ev.res) h += row(`Resonant, fw ${fmt(v.fwMin, 2)} to ${fmt(v.fwMax, 2)} Hz: governing fw ${fmt(ev.res.fw, 3)} Hz, harmonics ${ev.res.ahfw.map(a => fmt(a / 386.1 * 100, 2)).join(' / ')}`, `<b>${fmt(ev.apfwPct, 2)}</b>`, `% g weighted (limit ${fmt(o.alim, 1)}), R = ${fmt(ev.Ra, 1)}`);
+    if (ev.tr) h += row(`Transient at ${fmt(v.fwMax, 2)} Hz, ${ev.tr.modes} mode${ev.tr.modes === 1 ? '' : 's'} up to 2 f1${ev.tr.band ? `; 1/3 octave ${fmt(ev.tr.band.fc, 1)} Hz: ${fmt(ev.tr.band.vrms, 0)}` : ''}`, `<b>${fmt(ev.vrms, 0)}</b>`, `mips RMS weighted (limit ${fmt(o.vlim, 0)}), R = ${fmt(ev.Rv, 1)}`);
+    const pw = r.P.pcf * r.P.t / 12, L = cltSpanLimit(r.P.EI * 1e6, pw) * (r.topPsf > 2 * pw ? 0.9 : 1);
+    return h + row('CLT Handbook span limit (guide 4.2.2, bearing-wall basis; information only)', fmt(L, 1), `ft vs ${fmt(r.Lp, 1)} ft span${r.topPsf > 2 * pw ? ', -10% for topping' : ''}`);
+  }
   return row('Expected weight (panel + dead + vibration live)', fmt(r.wE, 1), 'psf') +
     row(`Panel frequency (${fmt(r.Lp, 1)} ft span)`, fmt(r.fp, 1), 'Hz') +
     (r.T2 ? row(`Purlin frequency (${o.B} ft span)`, fmt(r.fj, 1), 'Hz') : '') +
@@ -400,7 +423,7 @@ function renderDesign(o) {
     <div class="kpis">
       <div class="kpi"><b>${fmt(r.depth, 1)} in.</b><span>structural depth</span></div>
       <div class="kpi"><b>${fmt(r.fn, 1)} Hz</b><span>floor frequency</span></div>
-      <div class="kpi"><b>${fmt(r.ap, 2)}% g</b><span>acceleration (limit ${fmt(o.alim, 1)})</span></div>
+      <div class="kpi"><b>${r.vrms && !r.ap ? fmt(r.vrms, 0) + ' mips' : fmt(r.ap, 2) + '% g'}</b><span>${r.vrms && !r.ap ? 'RMS velocity (limit ' + fmt(o.vlim, 0) + ')' : 'acceleration (limit ' + fmt(o.alim, 1) + ')'}</span></div>
       <div class="kpi"><b>${fmt(Math.max(r.pan.umax, r.pur ? r.pur.umax : 0, r.gir.umax, r.col.umax), 2)}</b><span>highest utilization</span></div>
       <div class="kpi"><b>${fmt(r.ppk, 1)}</b><span>picks per 1,000 sq ft</span></div>
       <div class="kpi"><b>${fmt(r.heavy[1] / 1000, 1)} kip</b><span>heaviest pick (${r.heavy[0]})</span></div>
@@ -577,7 +600,7 @@ function renderReport(o) {
     ${H2('Assumptions and limits')}
     <ul>
       <li>Members designed to NDS 2018 (${o.method}) with ASCE 7-22 gravity combinations and ${o.llr ? 'live load reduction per §4.7' : 'no live load reduction'}. CLT properties from the layup per PRG 320-2019 Appendix X3; glulam from NDS Supplement Tables 5A and 5B.</li>
-      <li>Floor frequency from the guide's simple-span estimate with Dunkerley's combination; reproduces the guide's worked examples. Acceleration uses the AISC DG 11 walking formula as a stand-in, not validated for timber.</li>
+      <li>Vibration: ${o.vibMethod === 'dg11' ? 'AISC DG 11 walking formula (not validated for timber).' : `guide 4.3 modal response analysis (resonant limit ${fmt(o.alim, 1)}% g, transient limit ${fmt(o.vlim, 0)} mips, walking up to ${o.fwMax} Hz). The response calculations reproduce the guide's worked examples; the modes are closed-form estimates, not FEM.`}</li>
       <li>Uniform loads; purlin reactions smeared along the girders. Corridor CLT priced but not checked. Exterior girders and columns sized like interior ones. Fire per NDS 2018 Chapter 16 (effective char, residual sections, Table 16.2.2) with connection protection screened only. See ASSUMPTIONS.md for the full list.</li>
       <li>Costs: CLT from the Beck Group MTPI; glulam, erection, connection, freight and tariff values are editable estimates. No general conditions, design assist, shop drawings, temporary protection, sales tax or markup.</li>
       <li>Supplier panel sizes marked assumed are not confirmed. Tariff status on cross-border timber has changed repeatedly in 2025 and 2026.</li>
@@ -636,7 +659,13 @@ const TIPS = {
   split: "Lets the optimizer buy glulam from a different plant than the CLT, for example a glulam specialist closer to the site.",
   target: "Lower-bound floor frequency from the guide's simple method. A screening value, not a code limit; raising it pushes members deeper quickly. About 5 Hz is a reasonable start with the acceleration check also applied.",
   alim: "Peak walking acceleration limit. 0.5% g is the usual office limit; 0.3% g for premium offices, labs or quiet residential.",
-  damp: "Damping ratio used in the acceleration estimate. Bare structure 1 to 2%; fitted-out office with ceilings and partitions 3 to 5%.",
+  vibMethod: "Guide 4.3: modal response analysis (CCIP-016 resonant acceleration and transient RMS velocity) on closed-form mode estimates. DG 11: the AISC walking formula the concept used, kept for comparison.",
+  fwMax: "Fastest walking frequency for the space (guide Table 3-7). The resonant check sweeps from 0.6 Hz below this, in 0.025 Hz steps; the transient check uses this value.",
+  vlim: "RMS velocity limit for high-frequency floors (guide 3.7): 16,000 mips offices, 8,000 premium office or residential, 4,000 sensitive spaces.",
+  topType: "Topping on the CLT. Its weight is added to the dead load. Concrete stiffness is credited for vibration only (dynamic modulus 1.35 Ec); gypcrete is mass only (guide 3.3.5).",
+  topGamma: "Partial composite factor between topping and CLT for vibration (guide Table 3-6, low end of each range).",
+  beamGamma: "Incidental composite action between the CLT and purlins or girders when clamped with screws (guide 3.4.3), for vibration only. Not applied to dropped girders.",
+  damp: "Damping ratio for the vibration response (guide Table 3-2). Bare structure 1 to 2%; fitted-out office with ceilings and partitions 3 to 5%.",
   obj: "What 'best' means among the designs that pass. Cost is usual; shallowest structure helps when floor-to-floor height is tight.",
   lA: "Column spacings to try, separated by commas. Each value is combined with each B value.",
   lB: "Bay depths to try. Enter one value to hold a fixed room depth while the column spacing varies.",
