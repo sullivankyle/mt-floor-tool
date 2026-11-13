@@ -11,7 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "golden": "node tests/golden/generate.mjs",
-    "golden:update": "vitest run tests/golden.test.ts -u",
+    "golden:update": "node -e \"process.env.GOLDEN_UPDATE='1';require('child_process').execSync('npx vitest run tests/golden.test.ts',{stdio:'inherit',env:process.env})\"",
     "compare:concept": "node -e \"process.env.REPORT='1';require('child_process').execSync('npx vitest run',{stdio:'inherit',env:process.env})\""
   },
   "devDependencies": {
