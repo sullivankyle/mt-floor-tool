@@ -1,0 +1,7 @@
+{
+  "_status": "placeholder estimates; see the Catalog tab notes for sources",
+  "inst": { "_units": "crew $/hr; picks per hour", "crew": 3000, "pPanel": 2.5, "pBeam": 4, "pCol": 3 },
+  "conn": { "_units": "$ each", "pur": 250, "bear": 90, "gir": 700, "col": 900 },
+  "frt": { "_units": "rate $/mi; payload lb; osPct %; fixed, broker $/load; tariffs %", "rate": 3.25, "payload": 44000, "osPct": 35, "fixed": 250, "broker": 300, "tarCAUS": 0, "tarUSCA": 25 },
+  "logi": { "_units": "ft", "panW": 10, "panMax": 40 }
+}

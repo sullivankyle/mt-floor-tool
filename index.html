@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mass timber floor system study - concept demo</title>
+</head>
+<body>
+<header>
+  <h1>Mass timber floor system study <span class="ref">concept demo</span></h1>
+  <span class="banner">Concept tool. Every change re-runs the full study; values tagged as placeholders on the Catalog tab are estimates. Not for design or pricing.</span><span id="calcstat"></span>
+</header>
+
+<main>
+  <aside>
+    <div class="card">
+      <h2>Grid and layout</h2>
+      <label for="layout">Building layout</label>
+      <select id="layout">
+        <option value="corr" selected>Double-loaded corridor</option>
+        <option value="bay">One typical bay</option>
+      </select>
+      <div id="corrbox">
+        <div class="two">
+          <div><label for="nb">Bays each side</label><select id="nb"><option value="1" selected>1</option><option value="2">2</option></select></div>
+          <div><label for="Wc">Corridor width, ft</label><select id="Wc"><option>6</option><option selected>8</option><option>10</option><option>12</option></select></div>
+        </div>
+      </div>
+      <label for="gA">A: column spacing along the corridor (girder span)</label>
+      <div class="row"><input id="gA" type="range" min="12" max="40" step="1" value="30"><output id="gA_o"></output></div>
+      <label for="gB">B: bay depth, corridor to exterior (purlin span, or CLT span with no purlins)</label>
+      <div class="row"><input id="gB" type="range" min="10" max="40" step="1" value="25"><output id="gB_o"></output></div>
+      <label for="sysF">Framing system</label>
+      <select id="sysF">
+        <option value="all">Optimize</option>
+        <option value="T1">CLT on girders (no purlins)</option>
+        <option value="T2">CLT on flush purlins</option>
+        <option value="T3">CLT on purlins over dropped girders</option>
+        <option value="T23">Purlins, flush or dropped</option>
+      </select>
+      <div class="hint">Girders run along the corridor. Purlins run perpendicular to it, parallel to MEP branch ducts.</div>
+    </div>
+
+    <div class="card">
+      <h2>Loads</h2>
+      <label for="occ">Occupancy (design live / live counted for vibration)</label>
+      <select id="occ">
+        <option value="40|6">Residential (40 / 6 psf)</option>
+        <option value="50|7" selected>Office, electronic (50 / 7 psf)</option>
+        <option value="50|11">Office, paper (50 / 11 psf)</option>
+        <option value="100|0">Assembly (100 / 0 psf)</option>
+      </select>
+      <label for="sdl">Superimposed dead load</label>
+      <div class="row"><input id="sdl" type="range" min="0" max="50" step="1" value="25"><output id="sdl_o"></output></div>
+      <div class="hint">Finishes, partitions, topping, MEP.</div>
+    </div>
+
+    <div class="card">
+      <h2>Building</h2>
+      <label for="stories">Floors carried by each column</label>
+      <div class="row"><input id="stories" type="range" min="1" max="8" step="1" value="3"><output id="stories_o"></output></div>
+      <label for="H">Story height</label>
+      <div class="row"><input id="H" type="range" min="10" max="18" step="0.5" value="13"><output id="H_o"></output></div>
+      <label for="fire">Fire resistance (exposed timber)</label>
+      <select id="fire"><option value="0">None</option><option value="1" selected>1 hour</option><option value="2">2 hour</option></select>
+    </div>
+
+    <div class="card">
+      <h2>Design constraints</h2>
+      <label for="maxD">Maximum structural depth (CLT + girder)</label>
+      <select id="maxD"><option value="0">No limit</option><option>18</option><option>24</option><option>30</option><option>36</option><option>42</option><option selected>48</option><option>60</option><option>72</option></select>
+      <label for="maxPick">Crane: heaviest allowed pick</label>
+      <select id="maxPick"><option value="0" selected>No limit</option><option value="5">5 kip</option><option value="8">8 kip</option><option value="10">10 kip</option><option value="15">15 kip</option></select>
+      <label for="appear">CLT appearance</label>
+      <select id="appear"><option value="1">Industrial</option><option value="1.08" selected>Architectural (+8%)</option></select>
+    </div>
+
+    <div class="card">
+      <h2>Site and supply</h2>
+      <label for="site">Project site</label>
+      <select id="site"></select>
+      <label for="sup">Supplier</label>
+      <select id="sup"></select>
+      <label class="inline" for="split"><input type="checkbox" id="split"> Allow a separate glulam supplier</label>
+    </div>
+
+    <div class="card">
+      <h2>Vibration targets</h2>
+      <label for="target">Minimum floor frequency</label>
+      <div class="row"><input id="target" type="range" min="3" max="15" step="0.5" value="5"><output id="target_o"></output></div>
+      <label for="alim">Peak walking acceleration limit</label>
+      <select id="alim">
+        <option value="0.3">0.3% g (premium office, residence)</option>
+        <option value="0.5" selected>0.5% g (office, quiet areas)</option>
+        <option value="1.5">1.5% g (residence, daytime)</option>
+      </select>
+      <label for="damp">Damping ratio</label>
+      <div class="row"><input id="damp" type="range" min="1" max="5" step="0.5" value="3"><output id="damp_o"></output></div>
+    </div>
+
+    <div class="card">
+      <h2>Optimize for</h2>
+      <select id="obj">
+        <option value="cost">Lowest cost per sq ft</option>
+        <option value="depth">Shallowest structure</option>
+        <option value="vol">Least timber</option>
+        <option value="picks">Fewest crane picks</option>
+        <option value="freq">Highest floor frequency</option>
+      </select>
+      <div class="hint">Among designs that pass every check and constraint.</div>
+    </div>
+  </aside>
+
+  <section>
+    <div class="tabs" role="tablist">
+      <button class="tab on" data-tab="study">Study</button>
+      <button class="tab" data-tab="design">Design</button>
+      <button class="tab" data-tab="grid">Grid comparison</button>
+      <button class="tab" data-tab="runs">Runs</button>
+      <button class="tab" data-tab="catalog">Catalog and costs</button>
+      <button class="tab" data-tab="report">Report</button>
+    </div>
+
+    <!-- STUDY -->
+    <div class="panel on" id="tab-study">
+      <div class="card">
+        <h2>Best option</h2>
+        <div id="bestbox"></div>
+        <div class="hint" id="studyinfo"></div>
+      </div>
+      <div class="card">
+        <h2>Where the cost goes <span class="ref" id="cb_for"></span></h2>
+        <div id="costchart"></div>
+        <div class="hint">Bar height is $ per sq ft of floor; the label above each bar gives its share of the total. Unit costs and rates are on the Catalog tab.</div>
+      </div>
+      <div class="card">
+        <h2>Design considerations <span class="ref">for the best option</span></h2>
+        <ul class="notes" id="notes"></ul>
+      </div>
+      <div class="card">
+        <h2>Suppliers for the best option</h2>
+        <div style="overflow-x:auto"><div id="suppliers"></div></div>
+        <div class="hint">Each row prices the same design from one plant as a single package. Distance is straight-line x 1.25. Panel sizes marked "assumed" are not confirmed; check with the manufacturer.</div>
+      </div>
+      <div class="card">
+        <h2>Map: best design for each panel and layout</h2>
+        <div style="overflow-x:auto"><div id="heat"></div></div>
+        <div class="legend">
+          <span><i style="background:hsl(125 55% 85%)"></i>better</span>
+          <span><i style="background:hsl(0 55% 85%)"></i>worse</span>
+          <span><i style="background:#f0efeb"></i>no passing design</span>
+          <span><i style="outline:2px solid var(--good);outline-offset:-2px"></i>best overall</span>
+          <span><i style="box-shadow:inset 0 0 0 2px var(--accent)"></i>shown on Design tab</span>
+        </div>
+        <div class="hint">Each cell is the best member sizing found for that panel and layout. Click a cell to open it.</div>
+      </div>
+      <div class="card">
+        <h2>Trade-off: cost against <select id="sc_y" style="width:auto;display:inline-block;padding:2px 6px;font-size:12px"><option value="depth">structural depth</option><option value="fn">floor frequency</option></select></h2>
+        <div id="scatter"></div>
+        <div class="legend">
+          <span><i style="background:var(--t1)"></i>CLT on girders</span>
+          <span><i style="background:var(--t2)"></i>Flush purlins</span>
+          <span><i style="background:var(--t3)"></i>Purlins over dropped girders</span>
+          <span><i style="background:#c3c6cb"></i>strength ok, misses a target or constraint</span>
+        </div>
+        <div class="hint">Every design that passes strength. Click a dot to open it.</div>
+      </div>
+      <div class="card">
+        <h2>Shortlist</h2>
+        <div class="actions"><button class="btn primary" data-act="run-short">Add top 5 as runs</button></div>
+        <div style="overflow-x:auto"><div id="short"></div></div>
+      </div>
+    </div>
+
+    <!-- DESIGN -->
+    <div class="panel" id="tab-design">
+      <div class="card">
+        <h2>Design <span class="ref" id="d_mode"></span></h2>
+        <div class="four">
+          <div><label for="d_sys">System</label><select id="d_sys"><option value="T1">CLT on girders</option><option value="T2">CLT on flush purlins</option><option value="T3">Purlins over dropped girders</option></select></div>
+          <div><label for="d_n">Purlins per bay</label><select id="d_n"></select></div>
+          <div><label for="d_pi">CLT panel</label><select id="d_pi"></select></div>
+          <div><label for="d_ci">Column</label><select id="d_ci"></select></div>
+          <div><label for="d_pw">Purlin width</label><select id="d_pw"></select></div>
+          <div><label for="d_pd">Purlin depth</label><select id="d_pd"></select></div>
+          <div><label for="d_gw">Girder width</label><select id="d_gw"></select></div>
+          <div><label for="d_gd">Girder depth</label><select id="d_gd"></select></div>
+        </div>
+        <div class="actions" style="margin-top:12px">
+          <button class="btn" data-act="use-best">Use the optimizer's best</button>
+          <button class="btn primary" data-act="add-run">Add as a run</button>
+        </div>
+      </div>
+      <div class="card"><h2>Result</h2><div id="d_result"></div></div>
+      <div class="card"><h2>Where the cost goes</h2><div id="d_costchart"></div></div>
+      <div class="card"><h2>Plan</h2><div id="plan"></div></div>
+      <div class="card calc">
+        <h2>Calculations</h2>
+        <h3>1. Strength, deflection and fire <span class="ref">utilization = demand / capacity; ASD, D + L</span></h3>
+        <div style="overflow-x:auto"><table class="t" id="t_str"></table></div>
+        <h3>2. Vibration <span class="ref">guide frequency method, Dunkerley; acceleration is a DG 11 style placeholder</span></h3>
+        <table id="t_vib"></table>
+        <h3>3. Quantities <span class="ref" id="q_unit"></span></h3>
+        <table id="t_qty"></table>
+        <h3>4. Cost <span class="ref">unit costs and rates from the Catalog tab</span></h3>
+        <table id="t_cost"></table>
+      </div>
+      <div class="card"><h2>Design considerations</h2><ul class="notes" id="d_notes"></ul></div>
+      <div class="card check">
+        <h2>Method checks against the guide's worked examples</h2>
+        <div id="checks"></div>
+      </div>
+    </div>
+
+    <!-- GRID -->
+    <div class="panel" id="tab-grid">
+      <div class="card">
+        <h2>Compare grids</h2>
+        <div class="hint" style="margin:0 0 8px">Runs the full study for every A and B combination and keeps the best design for each. Enter a single B to hold a fixed bay depth while varying the column spacing.</div>
+        <div class="two">
+          <div><label for="lA">A values (column spacing along corridor), ft</label><input id="lA" type="text" value="20, 25, 30, 35"></div>
+          <div><label for="lB">B values (bay depth), ft</label><input id="lB" type="text" value="20, 25, 30"></div>
+        </div>
+        <div class="actions" style="margin-top:12px">
+          <button class="btn primary" data-act="grid">Run comparison</button>
+          <span class="hint" id="g_msg" style="margin:0"></span>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Best design per grid</h2>
+        <div style="overflow-x:auto"><div id="g_heat"></div></div>
+        <div class="hint">Click a cell to load that grid into the study.</div>
+      </div>
+      <div class="card"><h2>Ranked</h2><div id="g_bars"></div></div>
+    </div>
+
+    <!-- RUNS -->
+    <div class="panel" id="tab-runs">
+      <div class="card">
+        <h2>Runs</h2>
+        <div class="hint" style="margin:0 0 8px">A run freezes a design and its inputs so options can be compared side by side.</div>
+        <div class="actions">
+          <button class="btn primary" data-act="add-run">Add current design</button>
+          <button class="btn" data-act="run-short">Add top 5 from the study</button>
+          <button class="btn" data-act="clear-runs">Clear</button>
+        </div>
+        <div style="overflow-x:auto"><div id="runs"></div></div>
+      </div>
+    </div>
+
+    <!-- CATALOG -->
+    <div class="panel" id="tab-catalog">
+      <div class="card cat" id="catalog"></div>
+      <div class="card cat" id="mfrcat"></div>
+    </div>
+
+    <!-- REPORT -->
+    <div class="panel" id="tab-report">
+      <div class="card no-print">
+        <div class="two">
+          <div><label for="rp_name">Project name</label><input id="rp_name" type="text" placeholder="Untitled project"></div>
+          <div><label for="rp_by">Prepared by</label><input id="rp_by" type="text" placeholder="Name"></div>
+        </div>
+        <div class="actions" style="margin-top:12px">
+          <button class="btn primary" data-act="print">Print or save as PDF</button>
+          <button class="btn" data-act="copy">Copy as text</button>
+          <span class="hint" id="rp_msg" style="margin:0"></span>
+        </div>
+        <textarea id="rp_box" class="copybox" style="display:none" readonly></textarea>
+      </div>
+      <div id="report"></div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  Vibration equations re-implemented from the U.S. Mass Timber Floor Vibration Design Guide (WoodWorks, 2023) and checked against its worked examples. E1 panel values: APA PR-L332 (Kalesnikoff). CLT price basis: Beck Group Mass Timber Performance Index 2025 ($42 to $44 per cu ft, excluding freight). Erection rate basis: $3,000 per hour cited in a WoodWorks contractor presentation. Freight basis: DAT flatbed spot rates, fall 2026. Manufacturer data from published product pages where noted; everything else is a placeholder.
+</footer>
+<script type="module" src="./src/ui/main.ts"></script>
+</body>
+</html>

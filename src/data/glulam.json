@@ -1,0 +1,6 @@
+{
+  "_units": "E, Emin 10^6 psi; Fb, Fv, Fc psi; pcf lb/ft^3; cost $/ft^3 for a 6 3/4 in. wide member; widthFactor keyed by width in in.",
+  "_status": "placeholder: single generic 24F-1.8E-like grade",
+  "gl": { "E": 1.8, "Fb": 2400, "Fv": 265, "Fc": 1650, "Emin": 0.95, "pcf": 35, "cost": 55 },
+  "widthFactor": { "5.125": 0.95, "6.75": 1.0, "8.75": 1.08, "10.75": 1.2, "12.25": 1.3, "14.25": 1.45, "16.25": 1.6, "18.25": 1.75 }
+}

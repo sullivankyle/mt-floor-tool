@@ -1,0 +1,10 @@
+{
+  "_units": "[lat deg, lon deg, country]",
+  "sites": {
+    "Bellingham, WA": [48.75, -122.48, "US"], "Seattle, WA": [47.61, -122.33, "US"], "Portland, OR": [45.52, -122.68, "US"],
+    "San Francisco, CA": [37.77, -122.42, "US"], "Los Angeles, CA": [34.05, -118.24, "US"], "Boise, ID": [43.62, -116.2, "US"],
+    "Denver, CO": [39.74, -104.99, "US"], "Minneapolis, MN": [44.98, -93.27, "US"], "Chicago, IL": [41.88, -87.63, "US"],
+    "Dallas, TX": [32.78, -96.8, "US"], "Atlanta, GA": [33.75, -84.39, "US"], "Washington, DC": [38.9, -77.04, "US"],
+    "New York, NY": [40.71, -74.0, "US"], "Boston, MA": [42.36, -71.06, "US"], "Vancouver, BC": [49.28, -123.12, "CA"], "Toronto, ON": [43.65, -79.38, "CA"]
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "mt-floor-tool",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Mass timber floor system study tool (personal side project, not for design).",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "golden": "node tests/golden/generate.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.1",
+    "jsdom": "^26.1.0",
+    "typescript": "^5.9.3",
+    "vite": "^6.4.1",
+    "vite-plugin-singlefile": "^2.3.0",
+    "vitest": "^3.2.4"
+  }
+}
