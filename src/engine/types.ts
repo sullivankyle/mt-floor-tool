@@ -6,33 +6,43 @@
 export type SystemType = 'T1' | 'T2' | 'T3'; // T1 CLT on girders; T2 CLT on flush purlins; T3 purlins over dropped girders
 export type SystemFilter = 'all' | SystemType | 'T23';
 export type Objective = 'cost' | 'depth' | 'vol' | 'picks' | 'freq';
+export type Method = 'ASD' | 'LRFD';
 
-/** CLT panel catalog entry. */
+/** PRG 320 Table A1 lamination values, one direction. Stresses psi, E 10^6 psi. */
+export interface LamValues { Fb: number; E: number; Ft: number; Fc: number; Fv: number; Fs: number }
+export interface LamGrade { major: LamValues; minor: LamValues }
+
+/** CLT panel catalog entry. EI, FbS, GA, Vs, t, pl are filled from the layup (or override) by resolvePanels. */
 export interface Panel {
   on: boolean;
   grade: string;      // PRG 320 grade, e.g. 'E1', 'V2'
   name: string;
+  layers: number[];   // lamination thicknesses bottom to top, in.; alternating L/T starting with L
+  override?: { EI?: number; FbS?: number; GA?: number; Vs?: number; src?: string } | null;
   t: number;          // thickness, in.
   pl: number;         // number of plies (-)
-  EI: number;         // effective bending stiffness, 10^6 lbf-in^2/ft
+  EI: number;         // effective bending stiffness, major direction, 10^6 lbf-in^2/ft
   FbS: number;        // effective moment capacity (ASD reference), lbf-ft/ft
   GA: number;         // effective shear stiffness, 10^6 lbf/ft
   Vs: number;         // rolling shear capacity (ASD reference), lbf/ft
   pcf: number;        // density, lb/ft^3
   cost: number;       // supply price, $/ft^3
-  real: boolean;      // true = published value, false = placeholder/derived
+  real: boolean;      // true = computed from published lamination values or published panel values
   src: string;
 }
 
-/** Generic glulam properties (one grade for all members in the concept). */
+/** Glulam stress class for bending members (NDS Supplement Table 5A). Stresses psi, E 10^6 psi. */
+export interface BeamGrade { name: string; Fbp: number; Fbn: number; Fcperp: number; Fv: number; Extrue: number; Ex: number; Exmin: number; src: string; verified: boolean }
+/** Glulam combination for axial members (NDS Supplement Table 5B). Stresses psi, E 10^6 psi. */
+export interface ColumnGrade { name: string; Fc: number; Fcperp: number; E: number; Emin: number; src: string; verified: boolean }
+
+/** Glulam selections and pricing. */
 export interface Glulam {
-  E: number;     // modulus of elasticity, 10^6 psi
-  Fb: number;    // reference bending stress, psi
-  Fv: number;    // reference shear stress, psi
-  Fc: number;    // reference compression parallel to grain, psi
-  Emin: number;  // stability modulus, 10^6 psi
-  pcf: number;   // density, lb/ft^3
-  cost: number;  // $/ft^3 for a 6 3/4 in. wide member
+  beamGrade: string;            // BeamGrade.name for purlins and girders
+  colGrade: string;             // ColumnGrade.name for columns
+  balancedContinuous: boolean;  // continuous beams specified balanced (Fbx- = Fbx+, Table 5A footnote 1)
+  pcf: number;                  // density, lb/ft^3
+  cost: number;                 // $/ft^3 for a 6 3/4 in. wide member
 }
 
 export interface Manufacturer {
@@ -53,7 +63,9 @@ export type Site = [number, number, 'US' | 'CA']; // [lat deg, lon deg, country]
 
 export interface Catalog {
   panels: Panel[];
+  lams: Record<string, LamGrade>;
   gl: Glulam;
+  glGrades: { beams: BeamGrade[]; columns: ColumnGrade[] };
   glW: Record<string, number>;   // price factor by member width (in.), keyed as string
   inst: { crew: number; pPanel: number; pBeam: number; pCol: number };           // $/hr; picks/hr
   conn: { pur: number; bear: number; gir: number; col: number };                 // $ each
@@ -76,7 +88,7 @@ export interface Inputs {
   A: number;         // column spacing along corridor = girder span, ft
   B: number;         // bay depth = purlin span (or CLT span for T1), ft
   sysF: SystemFilter;
-  LLd: number;       // design live load, psf
+  LLd: number;       // design live load, psf (unreduced)
   LLv: number;       // live load counted for vibration, psf
   sdl: number;       // superimposed dead load, psf
   stories: number;   // floors carried by each column (-)
@@ -92,6 +104,11 @@ export interface Inputs {
   alim: number;      // peak acceleration limit, % g
   damp: number;      // damping ratio (-), e.g. 0.03
   obj: Objective;
+  method: Method;    // ASD or LRFD (NDS 2018 with ASCE 7-22 combinations)
+  panelCont: 'simple' | 'cont';   // CLT designed simple span, or continuous over the spans it is shipped across (max 3)
+  purlinCont: 'simple' | 'two';   // T3 purlins two-span over the middle girder (needs 2 bays each side)
+  llr: boolean;      // ASCE 7-22 §4.7 live load reduction
+  Ke: number;        // column effective length factor (-), NDS Appendix G
   fix: Fix;
 }
 
@@ -107,5 +124,11 @@ export interface Cfg {
   ci?: number | null; // column index into COLS, null = auto-size
 }
 
-/** Utilizations (demand/capacity, -). b bending, v shear, dl live defl, dt total defl, f fire. */
-export interface Util { b: number; v: number; dl: number; dt: number; f: number }
+/**
+ * Utilizations (demand/capacity, -). b bending, v shear, dl live deflection, dt long-term total deflection,
+ * f fire, br bearing (0 = not checked).
+ */
+export interface Util { b: number; v: number; dl: number; dt: number; f: number; br: number }
+
+/** Inputs that member checks need besides geometry: design method and fire. */
+export interface DesignBasis { method: Method; fire: number }

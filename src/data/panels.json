@@ -1,12 +1,13 @@
 {
-  "_units": "t in.; EI 10^6 lbf-in^2/ft; FbS lbf-ft/ft; GA 10^6 lbf/ft; Vs lbf/ft; pcf lb/ft^3; cost $/ft^3",
+  "_units": "layers: lamination thicknesses in in., bottom to top, alternating major (L) and minor (T) starting with L; pcf lb/ft^3; cost $/ft^3",
+  "_note": "Section properties are computed from the layup per PRG 320-2019 Appendix X3 (engine/clt.ts:cltLayupProps). Set 'override' to use product-report values instead.",
   "panels": [
-    { "on": true, "grade": "V2", "name": "V2 3-ply 4 1/8", "t": 4.125, "pl": 3, "EI": 95, "FbS": 2030, "GA": 0.46, "Vs": 1490, "pcf": 28.1, "cost": 43, "real": false, "src": "EI from the guide example; strength Derived from E1: EI x 1.4/1.7, strength x 875/1950 lam Fb" },
-    { "on": true, "grade": "V2", "name": "V2 5-ply 6 7/8", "t": 6.875, "pl": 5, "EI": 362, "FbS": 4670, "GA": 0.92, "Vs": 2480, "pcf": 28.1, "cost": 43, "real": false, "src": "Derived from E1: EI x 1.4/1.7, strength x 875/1950 lam Fb" },
-    { "on": true, "grade": "V2", "name": "V2 7-ply 9 5/8", "t": 9.625, "pl": 7, "EI": 897, "FbS": 8250, "GA": 1.4, "Vs": 3475, "pcf": 28.1, "cost": 43, "real": false, "src": "Derived from E1: EI x 1.4/1.7, strength x 875/1950 lam Fb" },
-    { "on": true, "grade": "E1", "name": "E1 3-ply 4 1/8", "t": 4.125, "pl": 3, "EI": 115, "FbS": 4525, "GA": 0.46, "Vs": 1490, "pcf": 28.1, "cost": 47, "real": true, "src": "APA PR-L332 (Kalesnikoff), E1 table" },
-    { "on": true, "grade": "E1", "name": "E1 5-ply 6 7/8", "t": 6.875, "pl": 5, "EI": 440, "FbS": 10400, "GA": 0.92, "Vs": 2480, "pcf": 28.1, "cost": 47, "real": true, "src": "APA PR-L332 (Kalesnikoff), E1 table" },
-    { "on": true, "grade": "E1", "name": "E1 7-ply 9 5/8", "t": 9.625, "pl": 7, "EI": 1089, "FbS": 18375, "GA": 1.4, "Vs": 3475, "pcf": 28.1, "cost": 47, "real": true, "src": "APA PR-L332 (Kalesnikoff), E1 table" },
-    { "on": true, "grade": "E1", "name": "E1 9-ply 12 3/8", "t": 12.375, "pl": 9, "EI": 2169, "FbS": 28475, "GA": 1.8, "Vs": 4450, "pcf": 28.1, "cost": 47, "real": true, "src": "APA PR-L332 (Kalesnikoff), E1 table" }
+    { "on": true, "grade": "V2", "name": "V2 3-ply 4 1/8",  "layers": [1.375, 1.375, 1.375], "pcf": 28.1, "cost": 43, "src": "PRG 320-2019 Table A1 V2 laminations, layup per Table A2" },
+    { "on": true, "grade": "V2", "name": "V2 5-ply 6 7/8",  "layers": [1.375, 1.375, 1.375, 1.375, 1.375], "pcf": 28.1, "cost": 43, "src": "PRG 320-2019 Table A1 V2 laminations, layup per Table A2" },
+    { "on": true, "grade": "V2", "name": "V2 7-ply 9 5/8",  "layers": [1.375, 1.375, 1.375, 1.375, 1.375, 1.375, 1.375], "pcf": 28.1, "cost": 43, "src": "PRG 320-2019 Table A1 V2 laminations, layup per Table A2" },
+    { "on": true, "grade": "E1", "name": "E1 3-ply 4 1/8",  "layers": [1.375, 1.375, 1.375], "pcf": 28.1, "cost": 47, "src": "PRG 320-2019 Table A1 E1 laminations, layup per Table A2" },
+    { "on": true, "grade": "E1", "name": "E1 5-ply 6 7/8",  "layers": [1.375, 1.375, 1.375, 1.375, 1.375], "pcf": 28.1, "cost": 47, "src": "PRG 320-2019 Table A1 E1 laminations, layup per Table A2" },
+    { "on": true, "grade": "E1", "name": "E1 7-ply 9 5/8",  "layers": [1.375, 1.375, 1.375, 1.375, 1.375, 1.375, 1.375], "pcf": 28.1, "cost": 47, "src": "PRG 320-2019 Table A1 E1 laminations, layup per Table A2" },
+    { "on": true, "grade": "E1", "name": "E1 9-ply 12 3/8", "layers": [1.375, 1.375, 1.375, 1.375, 1.375, 1.375, 1.375, 1.375, 1.375], "pcf": 28.1, "cost": 47, "src": "PRG 320-2019 Table A1 E1 laminations; 9-ply layup not in Table A2 (computed only)" }
   ]
 }

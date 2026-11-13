@@ -3,6 +3,7 @@
  */
 import type { Catalog, Cfg, Inputs, Objective } from './types';
 import { psfOf, panelCheck } from './clt';
+import { beamGrade } from './glulam';
 import { evalStructure } from './system';
 import { price, type DesignResult } from './cost';
 import { PWS, GWS, DEP, MAXDB } from '../data/catalog';
@@ -11,9 +12,9 @@ export interface Point { cfg: Cfg; r: DesignResult | null }
 
 /** Index into DEP of a starting depth from strength and L/240 stiffness. b in., L ft, wplf plf. */
 export function startIdx(cat: Catalog, b: number, L: number, wplf: number): number {
-  const gl = cat.gl, L12 = L * 12;
-  const dS = Math.sqrt(6 * (wplf * L * L / 8 * 12) / (b * gl.Fb * 0.9));
-  const dI = Math.cbrt(12 * (5 * (wplf / 12) * Math.pow(L12, 3) * 240 / (384 * gl.E * 1e6)) / b);
+  const g = beamGrade(cat), L12 = L * 12;
+  const dS = Math.sqrt(6 * (wplf * L * L / 8 * 12) / (b * g.Fbp * 0.9));
+  const dI = Math.cbrt(12 * (5 * (wplf / 12) * Math.pow(L12, 3) * 240 / (384 * g.Ex * 1e6)) / b);
   const i = DEP.findIndex(d => d >= Math.max(dS, dI) * 0.95);
   return i < 0 ? DEP.length - 1 : i;
 }
@@ -61,7 +62,13 @@ export function study(o: Inputs, cat: Catalog): Point[] {
     if (!P.on || (o.fix.pi != null && o.fix.pi !== pi)) return;
     layouts(o).forEach(l => {
       const Lp = l.sys !== 'T1' ? o.A / l.n : o.B;
-      if (Lp > cat.logi.panMax || !panelCheck(o, P, Lp).ok) { pts.push({ cfg: { sys: l.sys, n: l.n, pi } as Cfg, r: null }); return; }
+      // quick screen: panel as simple span with no live load reduction is conservative for every continuity option
+      if (Lp > cat.logi.panMax || !panelCheck({ method: o.method, fire: o.fire }, P, Lp, 1, o.sdl, o.LLd, 1).ok) {
+        // re-check with the real continuity before rejecting
+        const Lpan = Lp > cat.logi.panMax ? null : Math.max(Lp, Math.floor(cat.logi.panMax / Lp) * Lp);
+        const n = o.panelCont === 'cont' && Lpan ? Math.min(3, Math.max(1, Math.round(Lpan / Lp))) : 1;
+        if (!Lpan || !panelCheck({ method: o.method, fire: o.fire }, P, Lp, n, o.sdl, o.LLd, 1).ok) { pts.push({ cfg: { sys: l.sys, n: l.n, pi } as Cfg, r: null }); return; }
+      }
       const pws = l.sys === 'T1' ? [PWS[0]] : PWS.filter(w => o.fix.pw == null || w === o.fix.pw), gws = GWS.filter(w => o.fix.gw == null || w === o.fix.gw);
       pws.forEach(pw => gws.forEach(gw => { const a = autosize(o, cat, { sys: l.sys, n: l.n, pi, pw, gw }); if (a.r) pts.push(a); }));
     });

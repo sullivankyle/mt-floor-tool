@@ -1,6 +1,20 @@
 {
-  "_units": "E, Emin 10^6 psi; Fb, Fv, Fc psi; pcf lb/ft^3; cost $/ft^3 for a 6 3/4 in. wide member; widthFactor keyed by width in in.",
-  "_status": "placeholder: single generic 24F-1.8E-like grade",
-  "gl": { "E": 1.8, "Fb": 2400, "Fv": 265, "Fc": 1650, "Emin": 0.95, "pcf": 35, "cost": 55 },
+  "_units": "stresses psi; E, Emin 10^6 psi; pcf lb/ft^3; cost $/ft^3 for a 6 3/4 in. wide member; widthFactor keyed by width in in.",
+  "_source": "NDS Supplement 2018 Table 5A (stress classes, bending members) and Table 5B (axial combinations, Western species). Ex is Ex app (includes shear deflection, NDS 5.2.7).",
+  "beamGrades": [
+    { "name": "16F-1.3E", "Fbp": 1600, "Fbn": 925,  "Fcperp": 315, "Fv": 195, "Extrue": 1.4, "Ex": 1.3, "Exmin": 0.69, "src": "NDS Supplement 2018 Table 5A", "verified": true },
+    { "name": "20F-1.5E", "Fbp": 2000, "Fbn": 1100, "Fcperp": 425, "Fv": 195, "Extrue": 1.6, "Ex": 1.5, "Exmin": 0.79, "src": "NDS Supplement 2018 Table 5A", "verified": true },
+    { "name": "24F-1.7E", "Fbp": 2400, "Fbn": 1450, "Fcperp": 500, "Fv": 210, "Extrue": 1.8, "Ex": 1.7, "Exmin": 0.90, "src": "NDS Supplement 2018 Table 5A", "verified": true },
+    { "name": "24F-1.8E", "Fbp": 2400, "Fbn": 1450, "Fcperp": 650, "Fv": 265, "Extrue": 1.9, "Ex": 1.8, "Exmin": 0.95, "src": "NDS Supplement 2018 Table 5A", "verified": true },
+    { "name": "26F-1.9E", "Fbp": 2600, "Fbn": 1950, "Fcperp": 650, "Fv": 265, "Extrue": 2.0, "Ex": 1.9, "Exmin": 1.00, "src": "NDS Supplement 2018 Table 5A (limited availability, footnote 7)", "verified": true }
+  ],
+  "columnGrades": [
+    { "name": "DF #1 (L3)",  "Fc": 1550, "Fcperp": 560, "E": 1.6, "Emin": 0.79, "src": "NDS Supplement 2018 Table 5B, combination 1, 4+ laminations", "verified": true },
+    { "name": "DF #2 (L2)",  "Fc": 1950, "Fcperp": 560, "E": 1.7, "Emin": 0.85, "src": "NDS Supplement 2018 Table 5B, combination 2, 4+ laminations", "verified": true },
+    { "name": "DF #3 (L2D)", "Fc": 2300, "Fcperp": 650, "E": 2.0, "Emin": 1.00, "src": "NDS Supplement 2018 Table 5B, combination 3, 4+ laminations", "verified": true },
+    { "name": "DF #5 (L1)",  "Fc": 2400, "Fcperp": 650, "E": 2.1, "Emin": 1.06, "src": "NDS Supplement 2018 Table 5B, combination 5, 4+ laminations", "verified": true },
+    { "name": "SP #48 (N2D12)", "Fc": 2200, "Fcperp": 740, "E": 1.8, "Emin": 0.90, "src": "NDS Supplement 2018 Table 5B, combination 48, 4+ laminations", "verified": true }
+  ],
+  "gl": { "beamGrade": "24F-1.8E", "colGrade": "DF #2 (L2)", "balancedContinuous": true, "pcf": 35, "cost": 55 },
   "widthFactor": { "5.125": 0.95, "6.75": 1.0, "8.75": 1.08, "10.75": 1.2, "12.25": 1.3, "14.25": 1.45, "16.25": 1.6, "18.25": 1.75 }
 }

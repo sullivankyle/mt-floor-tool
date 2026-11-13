@@ -66,6 +66,19 @@
     </div>
 
     <div class="card">
+      <h2>Design basis</h2>
+      <label for="method">Design method (NDS 2018, ASCE 7-22)</label>
+      <select id="method"><option value="ASD" selected>ASD</option><option value="LRFD">LRFD</option></select>
+      <label for="panelCont">CLT panel spans</label>
+      <select id="panelCont"><option value="cont" selected>Continuous as shipped (up to 3 spans)</option><option value="simple">Simple span</option></select>
+      <label for="purlinCont">Purlins over dropped girders</label>
+      <select id="purlinCont"><option value="two" selected>Two-span where 2 bays each side</option><option value="simple">Simple span</option></select>
+      <label for="Ke">Column effective length factor Ke</label>
+      <select id="Ke"><option value="1" selected>1.0 (pinned-pinned)</option><option value="0.8">0.8</option><option value="1.2">1.2</option></select>
+      <label class="inline" for="llr"><input type="checkbox" id="llr" checked> Live load reduction (ASCE 7-22 4.7)</label>
+    </div>
+
+    <div class="card">
       <h2>Design constraints</h2>
       <label for="maxD">Maximum structural depth (CLT + girder)</label>
       <select id="maxD"><option value="0">No limit</option><option>18</option><option>24</option><option>30</option><option>36</option><option>42</option><option selected>48</option><option>60</option><option>72</option></select>
@@ -196,8 +209,10 @@
       <div class="card"><h2>Plan</h2><div id="plan"></div></div>
       <div class="card calc">
         <h2>Calculations</h2>
-        <h3>1. Strength, deflection and fire <span class="ref">utilization = demand / capacity; ASD, D + L</span></h3>
+        <h3>1. Strength, deflection and fire <span class="ref" id="str_basis">utilization = demand / capacity</span></h3>
         <div style="overflow-x:auto"><table class="t" id="t_str"></table></div>
+        <h3>1a. Design values and adjustment factors <span class="ref">NDS 2018; governing combination</span></h3>
+        <div style="overflow-x:auto"><table class="t" id="t_fac"></table></div>
         <h3>2. Vibration <span class="ref">guide frequency method, Dunkerley; acceleration is a DG 11 style placeholder</span></h3>
         <table id="t_vib"></table>
         <h3>3. Quantities <span class="ref" id="q_unit"></span></h3>

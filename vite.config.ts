@@ -7,7 +7,7 @@ export default defineConfig({
   base: './',
   plugins: [viteSingleFile()],
   test: {
-    include: ['tests/**/*.test.ts'],
+    include: process.env.REPORT ? ['tests/report/*.test.ts'] : ['tests/*.test.ts'],
     environment: 'node',
   },
 });

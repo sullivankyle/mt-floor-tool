@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "golden": "node tests/golden/generate.mjs"
+    "golden": "node tests/golden/generate.mjs",
+    "golden:update": "vitest run tests/golden.test.ts -u",
+    "compare:concept": "node -e \"process.env.REPORT='1';require('child_process').execSync('npx vitest run',{stdio:'inherit',env:process.env})\""
   },
   "devDependencies": {
     "@types/node": "^22.19.1",

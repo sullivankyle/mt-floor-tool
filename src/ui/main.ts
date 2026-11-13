@@ -1,9 +1,9 @@
 // @ts-nocheck -- UI ported verbatim from concept v7; the typed, tested code is src/engine.
 // Typing and splitting this module is deferred to Phase 6 (UI polish).
 import './styles.css';
-import { defaultCatalog, PWS, GWS, DEP, COLS } from '../data/catalog';
+import { defaultCatalog, DESIGN_DEFAULTS, PWS, GWS, DEP, COLS } from '../data/catalog';
 import { study, rank, evalDesign, priceWith, cltReason, glReason, miles, layouts, whyFail,
-         charDepth, stripDeflection, freqFromDefl, cltSpanLimit, OBJ_VALUE } from '../engine';
+         charDepth, stripDeflection, freqFromDefl, cltSpanLimit, OBJ_VALUE, combos, beamGrade, columnGrade, resolvePanels } from '../engine';
 
 let CAT = defaultCatalog();
 
@@ -46,7 +46,7 @@ function statusOf(r) {
 }
 function parseList(s) { return [...new Set(s.split(/[\s,;]+/).map(Number).filter(x => x >= 8 && x <= 60))].sort((a, b) => a - b); }
 
-const IDS = ['layout', 'nb', 'Wc', 'gA', 'gB', 'sysF', 'occ', 'sdl', 'stories', 'H', 'fire', 'maxD', 'maxPick', 'appear', 'site', 'sup', 'split', 'target', 'alim', 'damp', 'obj'];
+const IDS = ['layout', 'nb', 'Wc', 'gA', 'gB', 'sysF', 'occ', 'sdl', 'stories', 'H', 'fire', 'maxD', 'maxPick', 'appear', 'site', 'sup', 'split', 'target', 'alim', 'damp', 'obj', 'method', 'panelCont', 'purlinCont', 'Ke', 'llr'];
 function readInputs() {
   const [LLd, LLv] = $('occ').value.split('|').map(Number);
   return {
@@ -56,6 +56,7 @@ function readInputs() {
     maxD: +$('maxD').value, maxPick: +$('maxPick').value, appear: +$('appear').value,
     site: $('site').value, sup: $('sup').value, split: $('split').checked,
     target: +$('target').value, alim: +$('alim').value, damp: +$('damp').value / 100, obj: $('obj').value,
+    method: $('method').value, panelCont: $('panelCont').value, purlinCont: $('purlinCont').value, Ke: +$('Ke').value, llr: $('llr').checked,
     fix: { n: null, pi: null, pw: null, pd: null, gw: null, gd: null, ci: null }
   };
 }
@@ -65,6 +66,8 @@ function setInputs(o) {
   $('maxD').value = String(o.maxD); $('maxPick').value = String(o.maxPick); $('appear').value = String(o.appear);
   $('site').value = o.site; $('sup').value = o.sup; $('split').checked = o.split;
   $('target').value = o.target; $('alim').value = String(o.alim); $('damp').value = o.damp * 100; $('obj').value = o.obj;
+  const d = Object.assign({}, DESIGN_DEFAULTS, o);
+  $('method').value = d.method; $('panelCont').value = d.panelCont; $('purlinCont').value = d.purlinCont; $('Ke').value = String(d.Ke); $('llr').checked = d.llr;
 }
 const FIX = ['n', 'pi', 'pw', 'pd', 'gw', 'gd', 'ci'];
 function fillFixSelects() { return;
@@ -308,13 +311,24 @@ function fillSelect(id, opts, val) {
   el.value = String(val);
 }
 function utilTd(u, gov) { return `<td class="${u > 1 ? 'u-bad' : (gov ? 'u-gov' : '')}">${u ? fmt(u, 2) : '-'}</td>`; }
+const spanTxt = n => n > 1 ? ` x ${n} spans` : '';
 function strRows(r) {
-  const line = (name, size, u, umax, ok) => `<tr><td>${name}</td><td>${size}</td>` + ['b', 'v', 'dl', 'dt', 'f'].map(k => utilTd(u[k], u[k] === umax)).join('') + `<td><span class="chip ${ok ? 'good' : 'bad'}">${ok ? 'ok' : 'fails'}</span></td></tr>`;
-  let h = '<tr><th>Member</th><th>Size and span</th><th>Bending</th><th>Shear</th><th>Live defl. L/360</th><th>Total defl. L/240</th><th>Fire</th><th></th></tr>';
-  h += line('CLT panel', `${esc(r.P.name)}, ${fmt(r.Lp, 1)} ft`, r.pan.u, r.pan.umax, r.pan.ok);
-  if (r.T2) h += line('Purlin', `${sz(r.pur.b, r.pur.d)}, ${fmt(r.pur.L, 0)} ft`, r.pur.u, r.pur.umax, r.pur.ok);
+  const line = (name, size, u, umax, ok) => `<tr><td>${name}</td><td>${size}</td>` + ['b', 'v', 'dl', 'dt', 'f', 'br'].map(k => utilTd(u[k], u[k] === umax)).join('') + `<td><span class="chip ${ok ? 'good' : 'bad'}">${ok ? 'ok' : 'fails'}</span></td></tr>`;
+  let h = '<tr><th>Member</th><th>Size and span</th><th>Bending</th><th>Shear</th><th>Live defl. L/360</th><th>Long-term defl. L/240</th><th>Fire</th><th>Bearing</th><th></th></tr>';
+  h += line('CLT panel', `${esc(r.P.name)}, ${fmt(r.Lp, 1)} ft${spanTxt(r.pan.n)}`, r.pan.u, r.pan.umax, r.pan.ok);
+  if (r.T2) h += line('Purlin', `${sz(r.pur.b, r.pur.d)}, ${fmt(r.pur.L, 0)} ft${spanTxt(r.pur.spans)}`, r.pur.u, r.pur.umax, r.pur.ok);
   h += line('Girder', `${sz(r.gir.b, r.gir.d)}, ${fmt(r.gir.L, 0)} ft`, r.gir.u, r.gir.umax, r.gir.ok);
-  h += `<tr><td>Column</td><td>${sz(r.col.b, r.col.d)}, ${fmt(r.Pcol / 1000, 1)} kip</td>${utilTd(r.col.u.n, r.col.u.n === r.col.umax)}<td>-</td><td>-</td><td>-</td>${utilTd(r.col.u.f, r.col.u.f === r.col.umax)}<td><span class="chip ${r.col.ok ? 'good' : 'bad'}">${r.col.ok ? 'ok' : 'fails'}</span></td></tr>`;
+  h += `<tr><td>Column</td><td>${sz(r.col.b, r.col.d)}, ${fmt(r.Pcol / 1000, 1)} kip service</td>${utilTd(r.col.u.n, r.col.u.n === r.col.umax)}<td>-</td><td>-</td><td>-</td>${utilTd(r.col.u.f, r.col.u.f === r.col.umax)}<td>-</td><td><span class="chip ${r.col.ok ? 'good' : 'bad'}">${r.col.ok ? 'ok' : 'fails'}</span></td></tr>`;
+  return h;
+}
+function facRows(r, o) {
+  const g = beamGrade(CAT), cg = columnGrade(CAT), f2 = x => fmt(x, 2), f0 = x => fmt(x, 0);
+  let h = '<tr><th>Member</th><th class="l">Grade</th><th class="l">Governs</th><th>Live red.</th><th>CL</th><th>CV</th><th>Cb / CP</th><th>Fb\' or FbS\'</th><th>Fv\' or Vs\'</th><th class="l">Demand</th></tr>';
+  h += `<tr><td>CLT panel</td><td class="l">${esc(r.P.grade)} (PRG 320 X3)</td><td class="l">${r.pan.gov}</td><td>${f2(r.llf.pan)}</td><td>1.00</td><td>-</td><td>-</td><td>${f0(r.pan.FbSp)} lbf-ft/ft</td><td>${f0(r.pan.Vsp)} lbf/ft</td><td class="l">M ${f0(r.pan.M)} lbf-ft/ft, V ${f0(r.pan.V)} lbf/ft</td></tr>`;
+  const mem = (name, m, llf) => `<tr><td>${name}</td><td class="l">${esc(g.name)}</td><td class="l">${m.gov}</td><td>${f2(llf)}</td><td>${f2(m.CL)}</td><td>${f2(m.CV)}</td><td>${m.Cb !== 1 ? f2(m.Cb) : '-'}</td><td>${f0(m.Fbp)} psi</td><td>${f0(m.Fvp)} psi</td><td class="l">M ${fmt(m.M / 12000, 1)} kip-ft, V ${fmt(m.V / 1000, 1)} kip at d, R ${fmt(m.R / 1000, 1)} kip</td></tr>`;
+  if (r.T2) h += mem('Purlin', r.pur, r.llf.pur);
+  h += mem('Girder', r.gir, r.llf.gir);
+  h += `<tr><td>Column</td><td class="l">${esc(cg.name)}</td><td class="l">${r.col.gov}</td><td>${f2(r.llf.col)}</td><td>-</td><td>-</td><td>CP ${f2(r.col.CP)}</td><td>-</td><td>-</td><td class="l">P ${fmt(r.col.P / 1000, 1)} kip, le/d ${fmt(r.col.leOverD, 1)}</td></tr>`;
   return h;
 }
 function vibRows(r, o) {
@@ -369,7 +383,9 @@ function renderDesign(o) {
   $('d_costchart').innerHTML = costChart(r);
   $('plan').innerHTML = planSvg(o, r);
   $('q_unit').textContent = o.layout === 'corr' ? `per ${o.A} ft strip: ${2 * o.nb} bays plus corridor, one floor` : 'per typical bay, one floor';
-  $('t_str').innerHTML = strRows(r); $('t_vib').innerHTML = vibRows(r, o); $('t_qty').innerHTML = qtyRows(r, o); $('t_cost').innerHTML = costRows(r);
+  $('t_str').innerHTML = strRows(r); $('t_fac').innerHTML = facRows(r, o);
+  $('str_basis').textContent = `utilization = demand / capacity; ${o.method}, combinations ${combos(o.method).map(c => c.name).join(' and ')}; Kcr 1.5 glulam, 2.0 CLT`;
+  $('t_vib').innerHTML = vibRows(r, o); $('t_qty').innerHTML = qtyRows(r, o); $('t_cost').innerHTML = costRows(r);
   $('d_notes').innerHTML = considerations(o, r);
   const d1 = stripDeflection(46, 15, 380e6), f1 = freqFromDefl(d1), l2 = cltSpanLimit(95e6, 0.45 * 62.4 * 4.125 / 12);
   const ok1 = Math.abs(d1 - 0.138) < 0.0006 && Math.abs(f1 - 9.5) < 0.06, ok2 = Math.abs(l2 - 12.4) < 0.06;
@@ -441,24 +457,36 @@ function renderRuns() { $('runs').innerHTML = runsTable(true); }
 /* ----- catalog ----- */
 function renderCatalog() {
   const n = (k, v, w) => `<input type="number" data-${k} value="${v}" step="any" style="width:${w || 80}px">`;
-  let h = '<h2>CLT panels</h2><div style="overflow-x:auto"><table class="t"><tr><th>Use' + info(CTIP.use) + '</th><th>Name</th><th>Grade' + info(CTIP.grade) + '</th><th>t, in.</th><th>Plies</th><th>EI_eff, 10^6 lbf-in^2/ft' + info(CTIP.EI) + '</th><th>FbS_eff, lbf-ft/ft' + info(CTIP.FbS) + '</th><th>GA_eff, 10^6 lbf/ft' + info(CTIP.GA) + '</th><th>Vs, lbf/ft' + info(CTIP.Vs) + '</th><th>Density, pcf' + info(CTIP.dens) + '</th><th>Price, $/cu ft' + info(CTIP.price) + '</th><th class="l">Source</th></tr>';
+  let h = '<h2>CLT panels</h2><div style="overflow-x:auto"><table class="t"><tr><th>Use' + info(CTIP.use) + '</th><th>Name</th><th>Grade' + info(CTIP.grade) + '</th><th class="l">Layup, in.' + info(CTIP.layup) + '</th><th>t, in.</th><th>Plies</th><th>EI_eff, 10^6 lbf-in^2/ft' + info(CTIP.EI) + '</th><th>FbS_eff, lbf-ft/ft' + info(CTIP.FbS) + '</th><th>GA_eff, 10^6 lbf/ft' + info(CTIP.GA) + '</th><th>Vs, lbf/ft' + info(CTIP.Vs) + '</th><th>Density, pcf' + info(CTIP.dens) + '</th><th>Price, $/cu ft' + info(CTIP.price) + '</th><th class="l">Source</th></tr>';
   CAT.panels.forEach((P, i) => {
+    const ov = P.override && Object.keys(P.override).some(k => k !== 'src' && P.override[k] != null);
     h += `<tr><td><input type="checkbox" data-p="${i}" data-f="on" ${P.on ? 'checked' : ''}></td><td><input type="text" data-p="${i}" data-f="name" value="${esc(P.name)}" style="width:130px"></td><td>${P.grade}</td>` +
-      ['t', 'pl', 'EI', 'FbS', 'GA', 'Vs', 'pcf', 'cost'].map(f => `<td>${n(`p="${i}" data-f="${f}"`, P[f], 74)}</td>`).join('') +
-      `<td class="l" style="white-space:normal;min-width:220px"><span class="tag ${P.real ? 'real' : 'ph'}">${P.real ? 'published' : 'placeholder'}</span> <span class="hint">${esc(P.src)}</span></td></tr>`;
+      `<td class="l"><input type="text" data-p="${i}" data-f="layers" value="${esc(P.layers.join(' '))}" style="width:150px"></td><td>${fmt(P.t, 3)}</td><td>${P.pl}</td>` +
+      ['EI', 'FbS', 'GA', 'Vs'].map(f => `<td>${n(`p="${i}" data-f="${f}"`, +P[f].toPrecision(4), 74)}</td>`).join('') +
+      ['pcf', 'cost'].map(f => `<td>${n(`p="${i}" data-f="${f}"`, P[f], 74)}</td>`).join('') +
+      `<td class="l" style="white-space:normal;min-width:220px"><span class="tag ${ov ? 'ph' : 'real'}">${ov ? 'override' : 'computed'}</span> <span class="hint">${esc(ov && P.override.src ? P.override.src : P.src)}</span></td></tr>`;
   });
-  h += '</table></div><div class="hint">CLT price default from the Beck Group Mass Timber Performance Index (about $42 to $44 per cu ft in 2023 and 2024, excluding freight). E1 premium is a placeholder.</div>';
+  h += '</table></div><div class="hint">Section properties are computed from the layup and the PRG 320-2019 Table A1 lamination values (Appendix X3); they reproduce Table A2. Typing a value into EI, FbS, GA or Vs overrides it, for example with a manufacturer\'s product-report value; edit the layup to go back to computed values. Layers run bottom to top, alternating major and minor. CLT price default from the Beck Group Mass Timber Performance Index (about $42 to $44 per cu ft in 2023 and 2024, excluding freight). E1 premium is a placeholder.</div>';
+  // key is the data attribute suffix (g, i, c, r, l) -> data-g="field"
   const block = (title, tag, fields, key) => `<h2 style="margin-top:20px">${title} ${tag ? '<span class="tag ph">' + tag + '</span>' : ''}</h2><div class="four">` +
     fields.map(([k, l, v]) => `<div><label>${l}${info(CTIP[k])}</label>${n(`${key}="${k}"`, v, 120)}</div>`).join('') + '</div>';
-  const g = CAT.gl, I = CAT.inst, C = CAT.conn, F = CAT.frt, L = CAT.logi;
-  h += block('Glulam', 'placeholder', [['E', 'E, 10^6 psi', g.E], ['Fb', 'Fb, psi', g.Fb], ['Fv', 'Fv, psi', g.Fv], ['Fc', 'Fc (columns), psi', g.Fc], ['Emin', 'Emin, 10^6 psi', g.Emin], ['pcf', 'Density, pcf', g.pcf], ['cost', 'Base price, $/cu ft (6 3/4 in. wide)', g.cost]], 'data-g');
+  const g = CAT.gl, I = CAT.inst, C = CAT.conn, F = CAT.frt, L = CAT.logi, bg = beamGrade(CAT), cg = columnGrade(CAT);
+  const sel = (key, opts, v) => `<select data-gs="${key}">${opts.map(x => `<option ${x === v ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select>`;
+  h += `<h2 style="margin-top:20px">Glulam <span class="tag real">NDS Supplement 2018</span></h2><div class="four">` +
+    `<div><label>Beams (purlins, girders)${info(CTIP.bgrade)}</label>${sel('beamGrade', CAT.glGrades.beams.map(x => x.name), g.beamGrade)}</div>` +
+    `<div><label>Columns${info(CTIP.cgrade)}</label>${sel('colGrade', CAT.glGrades.columns.map(x => x.name), g.colGrade)}</div>` +
+    `<div><label>Density, pcf${info(CTIP.pcf)}</label>${n('g="pcf"', g.pcf, 120)}</div>` +
+    `<div><label>Base price, $/cu ft (6 3/4 in. wide)${info(CTIP.cost)}</label>${n('g="cost"', g.cost, 120)}</div></div>` +
+    `<label class="inline"><input type="checkbox" data-gb="balancedContinuous" ${g.balancedContinuous ? 'checked' : ''}> Specify continuous beams balanced (Fbx- = Fbx+)${info(CTIP.balanced)}</label>` +
+    `<div class="hint">${esc(bg.name)}: Fbx+ ${bg.Fbp}, Fbx- ${bg.Fbn}, Fv ${bg.Fv}, Fc perp ${bg.Fcperp} psi; Ex app ${bg.Ex}, Ex min ${bg.Exmin} x 10^6 psi (${esc(bg.src)}). ` +
+    `${esc(cg.name)}: Fc ${cg.Fc}, Fc perp ${cg.Fcperp} psi; E ${cg.E}, Emin ${cg.Emin} x 10^6 psi (${esc(cg.src)}).</div>`;
   h += '<div class="hint">Price rises with width: ' + Object.entries(CAT.glW).map(([w, f]) => `${wl(+w)} x${f}`).join(', ') + '. Wider members need wider, costlier lamstock (Beck Group MTPI 2025). Auto-sizing limits beam depth to 6 x width.</div>';
-  h += block('Erection', 'placeholder', [['crew', 'Crane and crew, $/hour', I.crew], ['pPanel', 'Panel picks per hour', I.pPanel], ['pBeam', 'Beam picks per hour', I.pBeam], ['pCol', 'Column picks per hour', I.pCol]], 'data-i');
+  h += block('Erection', 'placeholder', [['crew', 'Crane and crew, $/hour', I.crew], ['pPanel', 'Panel picks per hour', I.pPanel], ['pBeam', 'Beam picks per hour', I.pBeam], ['pCol', 'Column picks per hour', I.pCol]], 'i');
   h += '<div class="hint">$3,000 per hour erection cost cited for one project in a WoodWorks contractor presentation. A study of CLT floor installation measured a typical 78.5 m² (845 sq ft) per hour, about 2 to 3 panels per hour.</div>';
-  h += block('Connections, installed allowance', 'placeholder', [['pur', 'Per flush purlin end (hanger), $', C.pur], ['bear', 'Per purlin end bearing on a girder, $', C.bear], ['gir', 'Per girder end, $', C.gir], ['col', 'Per column (base, cap, splice), $', C.col]], 'data-c');
-  h += block('Freight and border', 'estimate', [['rate', 'Flatbed, $/mile (all in)', F.rate], ['payload', 'Payload per load, lb', F.payload], ['osPct', 'Oversize surcharge, %', F.osPct], ['fixed', 'Per load fixed, $', F.fixed], ['broker', 'Customs broker per load, $', F.broker], ['tarCAUS', 'Tariff, Canada to US, %', F.tarCAUS], ['tarUSCA', 'Tariff, US to Canada, %', F.tarUSCA]], 'data-r');
+  h += block('Connections, installed allowance', 'placeholder', [['pur', 'Per flush purlin end (hanger), $', C.pur], ['bear', 'Per purlin end bearing on a girder, $', C.bear], ['gir', 'Per girder end, $', C.gir], ['col', 'Per column (base, cap, splice), $', C.col]], 'c');
+  h += block('Freight and border', 'estimate', [['rate', 'Flatbed, $/mile (all in)', F.rate], ['payload', 'Payload per load, lb', F.payload], ['osPct', 'Oversize surcharge, %', F.osPct], ['fixed', 'Per load fixed, $', F.fixed], ['broker', 'Customs broker per load, $', F.broker], ['tarCAUS', 'Tariff, Canada to US, %', F.tarCAUS], ['tarUSCA', 'Tariff, US to Canada, %', F.tarUSCA]], 'r');
   h += '<div class="hint">DAT flatbed spot linehaul ran about $2.60 to $2.90 per mile in fall 2026, before fuel. Tariff defaults assume CUSMA-compliant Canadian CLT and glulam (not on the August 2026 US tariff list) and Canada\'s 25% counter-tariff on US CLT and glulam. Both change often; confirm.</div>';
-  h += block('Panel logistics', '', [['panW', 'Panel width, ft', L.panW], ['panMax', 'Max panel length, ft', L.panMax]], 'data-l');
+  h += block('Panel logistics', '', [['panW', 'Panel width, ft', L.panW], ['panMax', 'Max panel length, ft', L.panMax]], 'l');
   h += '<div class="actions" style="margin-top:16px"><button class="btn" data-act="reset-cat">Reset catalog to defaults</button></div>';
   $('catalog').innerHTML = h;
   $('mfrcat').innerHTML = '<h2>Manufacturers</h2><div style="overflow-x:auto"><table class="t"><tr><th>Use' + info(CTIP.muse) + '</th><th>Manufacturer</th><th>Plant</th><th>Country</th><th class="l">Makes</th><th>Max CLT w x L, ft' + info(CTIP.msize) + '</th><th>Grades' + info(CTIP.mgrade) + '</th><th>Price factor' + info(CTIP.pf) + '</th><th class="l">Notes</th></tr>' +
@@ -470,7 +498,18 @@ function renderCatalog() {
 function onCatChange(e) {
   const el = e.target, d = el.dataset, val = el.type === 'checkbox' ? el.checked : el.type === 'number' ? +el.value : el.value;
   if (el.type === 'number' && !(val > 0) && d.r !== 'tarCAUS' && d.r !== 'tarUSCA') return;
-  if (d.p != null) { CAT.panels[+d.p][d.f] = val; if (['EI', 'FbS', 'GA', 'Vs', 't', 'pl'].includes(d.f)) { CAT.panels[+d.p].real = false; renderCatalog(); } }
+  if (d.p != null) {
+    const P = CAT.panels[+d.p];
+    if (d.f === 'layers') {   // new layup: recompute from it and drop any overrides
+      const L = String(val).split(/[\s,;]+/).map(Number).filter(x => x > 0);
+      if (L.length >= 3 && L.length % 2 === 1) { P.layers = L; P.override = null; resolvePanels([P], CAT.lams); }
+      renderCatalog();
+    } else if (['EI', 'FbS', 'GA', 'Vs'].includes(d.f)) {
+      P.override = Object.assign({}, P.override, { [d.f]: val, src: 'Entered on the Catalog tab' }); P[d.f] = val; renderCatalog();
+    } else P[d.f] = val;
+  }
+  else if (d.gs) { CAT.gl[d.gs] = val; renderCatalog(); }
+  else if (d.gb) CAT.gl[d.gb] = val;
   else if (d.m != null) CAT.mfrs[+d.m][d.f] = val;
   else if (d.g) CAT.gl[d.g] = val; else if (d.i) CAT.inst[d.i] = val; else if (d.c) CAT.conn[d.c] = val; else if (d.r) CAT.frt[d.r] = val; else if (d.l) CAT.logi[d.l] = val;
   fillSupplierSelect(); fillFixSelects(); render();
@@ -512,9 +551,9 @@ function renderReport(o) {
     ${H2('Runs')}${runsTable(false)}
     ${H2('Assumptions and limits')}
     <ul>
+      <li>Members designed to NDS 2018 (${o.method}) with ASCE 7-22 gravity combinations and ${o.llr ? 'live load reduction per §4.7' : 'no live load reduction'}. CLT properties from the layup per PRG 320-2019 Appendix X3; glulam from NDS Supplement Tables 5A and 5B.</li>
       <li>Floor frequency from the guide's simple-span estimate with Dunkerley's combination; reproduces the guide's worked examples. Acceleration uses the AISC DG 11 walking formula as a stand-in, not validated for timber.</li>
-      <li>Members simple span, uniform load; purlins hung flush from girders. Corridor CLT spans between the corridor girders. Exterior girders sized like interior ones.</li>
-      <li>E1 panel values published (APA PR-L332); V2 values derived. Glulam grades, fire, column and connection methods are simplified placeholders.</li>
+      <li>Uniform loads; purlin reactions smeared along the girders. Corridor CLT priced but not checked. Exterior girders and columns sized like interior ones. Fire and connections use simplified methods. See ASSUMPTIONS.md for the full list.</li>
       <li>Costs: CLT from the Beck Group MTPI; glulam, erection, connection, freight and tariff values are editable estimates. No general conditions, design assist, shop drawings, temporary protection, sales tax or markup.</li>
       <li>Supplier panel sizes marked assumed are not confirmed. Tariff status on cross-border timber has changed repeatedly in 2025 and 2026.</li>
     </ul></div>`;
@@ -580,10 +619,19 @@ const TIPS = {
   d_sys: "Framing system for this one design. The optimizer's choice is shown until you change something.",
   d_n: "Purlins per bay; sets the CLT span.", d_pi: "Panel for this design.", d_ci: "Auto picks the smallest column that passes.",
   d_pw: "Purlin width.", d_pd: "Purlin depth.", d_gw: "Girder width.", d_gd: "Girder depth.",
-  rp_name: "Shown at the top of the report.", rp_by: "Shown at the top of the report."
+  rp_name: "Shown at the top of the report.", rp_by: "Shown at the top of the report.",
+  method: "ASD uses D and D + L with load duration factors 0.9 and 1.0. LRFD uses 1.4D and 1.2D + 1.6L with time effect factors 0.6 and 0.8 and the NDS format conversion and resistance factors. Results are close; LRFD is usually slightly lighter for live-heavy floors.",
+  panelCont: "Continuous designs each panel over the supports it is shipped across (up to 3 spans analysed), with live load placed on the worst spans. Interior supports then carry more load (1.25 x for two spans), which the purlins or girders below pick up.",
+  purlinCont: "With two bays each side of the corridor, purlins sitting on dropped girders can run continuous over the middle girder. Lowers purlin moment and deflection, but the middle girder carries 1.25 x the load. Only applies to the dropped-girder system.",
+  Ke: "Effective length factor for column buckling (NDS Appendix G). 1.0 for columns pinned at each floor, the usual assumption.",
+  llr: "Reduces design live load on members with large tributary areas (ASCE 7-22 4.7): columns use KLL = 4 and all floors above, beams KLL = 2. Not applied to 100 psf assembly loads. Deflections use the unreduced live load."
 };
 const CTIP = {
   use: "Untick to leave this panel out of the study.",
+  layup: "Lamination thicknesses in inches, bottom to top, alternating major and minor direction (odd count). Properties are computed from this and the grade's PRG 320 lamination values.",
+  bgrade: "Glulam stress class for purlins and girders (NDS Supplement Table 5A). 24F-1.8E is the common default.",
+  cgrade: "Glulam combination for columns (NDS Supplement Table 5B). Douglas fir combination 2 is a common default.",
+  balanced: "Continuous beams see negative moment over the support with the top in tension. Specifying a balanced layup gives Fbx- = Fbx+ (Table 5A footnote 1); otherwise the lower Fbx- applies.",
   grade: "PRG 320 grade. E grades use machine-rated lumber in the major direction (stiffer, pricier); V grades use visually graded lumber.",
   EI: "Effective bending stiffness per foot of width, major direction. Controls deflection and vibration. Take it from the manufacturer's product report.",
   FbS: "Effective bending moment capacity per foot of width, ASD reference value.",
@@ -648,7 +696,7 @@ function fillSupplierSelect() {
 }
 $('site').innerHTML = Object.keys(CAT.sites).map(k => `<option>${k}</option>`).join(''); $('site').value = 'Seattle, WA';
 fillSupplierSelect(); fillFixSelects();
-IDS.concat(['rp_name', 'rp_by']).forEach(id => $(id).addEventListener(['split'].includes(id) ? 'change' : 'input', render));
+IDS.concat(['rp_name', 'rp_by']).forEach(id => $(id).addEventListener(['split', 'llr'].includes(id) ? 'change' : 'input', render));
 $('sc_y').addEventListener('change', () => { $('scatter').innerHTML = scatterSvg(S.o); });
 ['d_sys', 'd_n', 'd_pi', 'd_ci', 'd_pw', 'd_pd', 'd_gw', 'd_gd'].forEach(id => $(id).addEventListener('change', () => { pinned = cfgFromEditor(); render(); }));
 function showTab(name) {

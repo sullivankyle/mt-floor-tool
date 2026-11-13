@@ -1,6 +1,8 @@
-import type { Catalog } from '../engine/types';
+import type { Catalog, Inputs } from '../engine/types';
+import { resolvePanels } from '../engine/clt';
 import panels from './panels.json';
 import glulam from './glulam.json';
+import lams from './laminations.json';
 import costs from './costs.json';
 import mfrs from './manufacturers.json';
 import sites from './sites.json';
@@ -9,17 +11,25 @@ import sections from './sections.json';
 const strip = <T extends object>(o: T): T => Object.fromEntries(Object.entries(o).filter(([k]) => !k.startsWith('_'))) as T;
 const clone = <T>(x: T): T => JSON.parse(JSON.stringify(x));
 
-/** A fresh, editable copy of the default catalog (concept defaultCatalog()). */
+/** A fresh, editable copy of the default catalog, with CLT properties computed from the layups. */
 export function defaultCatalog(): Catalog {
-  return clone({
+  const cat = clone({
     panels: panels.panels,
+    lams: lams.grades,
     gl: glulam.gl,
+    glGrades: { beams: glulam.beamGrades, columns: glulam.columnGrades },
     glW: glulam.widthFactor,
     inst: strip(costs.inst), conn: strip(costs.conn), frt: strip(costs.frt), logi: strip(costs.logi),
     mfrs: mfrs.mfrs,
     sites: sites.sites,
   }) as unknown as Catalog;   // JSON tuples widen to arrays; shapes are checked by tests
+  resolvePanels(cat.panels, cat.lams);
+  return cat;
 }
+
+/** Defaults for the Phase 2 design-basis inputs (merged into older saved inputs). */
+export const DESIGN_DEFAULTS: Pick<Inputs, 'method' | 'panelCont' | 'purlinCont' | 'llr' | 'Ke'> =
+  { method: 'ASD', panelCont: 'cont', purlinCont: 'two', llr: true, Ke: 1.0 };
 
 /** Standard glulam sections. All in in. */
 export const PWS: number[] = sections.purlinWidths;

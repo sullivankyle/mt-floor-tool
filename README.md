@@ -17,7 +17,7 @@ npm run build      # type check, then a single self-contained dist/index.html
 
 | Path | What |
 |---|---|
-| `src/engine/` | Calc engine. Pure functions, no DOM, US customary units, documented on each function. `clt`, `glulam`, `fire`, `columns`, `vibration`, `system` (one bay), `logistics`, `cost`, `optimizer`. |
+| `src/engine/` | Calc engine. Pure functions, no DOM, US customary units, documented on each function. `loads` (combinations, live load reduction), `beam` (continuous spans), `clt`, `glulam`, `fire`, `columns`, `vibration`, `system` (one bay), `logistics`, `cost`, `optimizer`. |
 | `src/data/` | Catalog data as JSON (panels, glulam, manufacturers, sites, costs, sections) and `catalog.ts`, which assembles it. |
 | `src/ui/` | Page rendering and events. Ported verbatim from the concept; not type-checked yet (`@ts-nocheck`). |
 | `tests/` | Vitest. `golden.test.ts` checks the engine against the original concept for 5 reference cases. `guide-examples.test.ts` holds the vibration guide's worked examples. |
@@ -27,7 +27,13 @@ npm run build      # type check, then a single self-contained dist/index.html
 
 ## Golden files
 
-`npm run golden` loads `concept/vibration-concept.html` in jsdom, runs the 5 cases in `tests/golden/cases.mjs`, and writes `tests/golden/cases/*.json` (every sized design with its checks, quantities and pricing). Rerun it only if the concept changes. When a later phase changes results on purpose, update the expectations in the same commit and say why.
+- `tests/golden/concept-v7/` holds the original concept's outputs for the 5 cases in `tests/golden/cases.mjs` (every sized design with its checks, quantities and pricing). `npm run golden` regenerates them by loading `concept/vibration-concept.html` in jsdom. Phase 1 matched them exactly.
+- `tests/golden/engine/` holds snapshots of the current engine, which `npm test` checks. After an intended change in results, run `npm run golden:update` and say why in the commit.
+- `npm run compare:concept` prints how each case's best design differs from the concept.
+
+## Design basis (Phase 2)
+
+NDS 2018 with ASCE 7-22 gravity combinations, selectable ASD or LRFD. CLT properties are computed from the layup (PRG 320-2019 Appendix X3); glulam values come from NDS Supplement Tables 5A and 5B. Panels and two-span purlins are analysed as continuous beams with pattern live load. Live load reduction follows ASCE 7-22 §4.7. See `ASSUMPTIONS.md` for everything simplified.
 
 ## Why TypeScript
 

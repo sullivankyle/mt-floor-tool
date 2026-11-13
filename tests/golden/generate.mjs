@@ -11,7 +11,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..', '..');
 const html = readFileSync(join(root, 'concept', 'vibration-concept.html'), 'utf8');
 const summarizeSrc = readFileSync(join(here, 'summarize.mjs'), 'utf8').replace(/^export\s+/m, '');
-const outDir = join(here, 'cases');
+const outDir = join(here, 'concept-v7');
 mkdirSync(outDir, { recursive: true });
 
 for (const [name, overrides] of Object.entries(CASES)) {

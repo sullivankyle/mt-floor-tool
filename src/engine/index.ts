@@ -1,4 +1,6 @@
 export * from './types';
+export * from './loads';
+export * from './beam';
 export * from './clt';
 export * from './fire';
 export * from './glulam';
